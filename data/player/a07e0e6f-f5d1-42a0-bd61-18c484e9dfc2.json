@@ -1,0 +1,32 @@
+{
+  "stat": {
+    "mob_kills": 26,
+    "interact_with_crafting_table": 47,
+    "open_shulker_box": 23,
+    "leave_game": 5,
+    "time_since_death": 79146,
+    "climb_one_cm": 27760,
+    "sprint_one_cm": 719983,
+    "walk_one_cm": 913965,
+    "drop": 4,
+    "talked_to_villager": 1,
+    "play_time": 258174,
+    "deaths": 6,
+    "sneak_time": 1181,
+    "walk_under_water_one_cm": 43377,
+    "boat_one_cm": 509962,
+    "jump": 2824,
+    "walk_on_water_one_cm": 54506,
+    "total_world_time": 258174,
+    "interact_with_furnace": 38,
+    "sleep_in_bed": 5,
+    "time_since_rest": 5508,
+    "damage_taken": 3121,
+    "damage_dealt": 4570,
+    "fly_one_cm": 341620,
+    "swim_one_cm": 38515,
+    "open_chest": 38,
+    "crouch_one_cm": 1397,
+    "fall_one_cm": 43525
+  }
+}

@@ -1,50 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300&family=Source+Code+Pro&display=swap');
-
-/* RESET */
-*:where(:not(iframe, canvas, img, svg, video):not(svg *, symbol *)) {
-	all: unset;
-	display: revert;
-}
-
-*,
-*::before,
-*::after {
-	box-sizing: border-box;
-}
-
-ol,
-ul,
-menu {
-	list-style: none;
-}
-
-img {
-	max-width: 100%;
-}
-
-table {
-	border-collapse: collapse;
-}
-
-textarea {
-	white-space: revert;
-}
-
-:where([hidden]) {
-	display: none;
-}
-
-:where([contenteditable]) {
-	-moz-user-modify: read-write;
-	-webkit-user-modify: read-write;
-	overflow-wrap: break-word;
-	line-break: after-white-space;
-	-webkit-line-break: after-white-space;
-}
-
-:where([draggable="true"]) {
-	-webkit-user-drag: element;
-}
+@import url('reset.css');
 
 /* GLOBAL */
 :root {
@@ -60,6 +15,7 @@ textarea {
 	--dark: #414141;
 	--darker: #313131;
 	--darkest: #212121;
+
 }
 
 body.light {
@@ -101,7 +57,8 @@ body {
 	display: grid;
 	grid-template-areas:
 		"Header Header Header"
-		"Navigation SubMenu Content";
+		"Navigation SubMenu Content"
+		"Footer Footer Footer";
 	grid-template-columns: auto auto 1fr;
 	grid-template-rows: auto 1fr auto;
 	height: 100vh;
@@ -144,7 +101,6 @@ h6 {
 	scrollbar-color: var(--dark) var(--darkest);
 }
 
-/* Works on Chrome, Edge, and Safari */
 *::-webkit-scrollbar {
 	width: 12px;
 }
@@ -160,7 +116,7 @@ h6 {
 
 .stats_grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
 	grid-auto-flow: row;
 	row-gap: 1em;
 	column-gap: 1em;
@@ -170,6 +126,16 @@ h6 {
 	display: none;
 }
 
+.show {
+	display: block;
+}
+
 .loading {
 	text-align: center;
+}
+
+@media screen and (max-width: 600px) {
+	::-webkit-scrollbar {
+		width: 0;
+	}
 }

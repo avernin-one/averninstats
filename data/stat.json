@@ -10,6 +10,8 @@
   "damage_absorbed",
   "damage_blocked_by_shield",
   "damage_dealt",
+  "damage_dealt_absorbed",
+  "damage_resisted",
   "damage_taken",
   "deaths",
   "drop",

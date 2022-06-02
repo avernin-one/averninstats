@@ -1,20 +1,24 @@
 {
   "used": {
+    "2": [
+      "a07e0e6f-f5d1-42a0-bd61-18c484e9dfc2"
+    ],
     "3": [
       "e610b5a5-68ba-4da7-8380-deaaa97875e4"
     ]
   },
   "crafted": {
     "3": [
-      "e610b5a5-68ba-4da7-8380-deaaa97875e4"
-    ]
-  },
-  "picked_up": {
-    "1": [
+      "a07e0e6f-f5d1-42a0-bd61-18c484e9dfc2",
       "e610b5a5-68ba-4da7-8380-deaaa97875e4"
     ]
   },
   "mined": {
+    "1": [
+      "e610b5a5-68ba-4da7-8380-deaaa97875e4"
+    ]
+  },
+  "picked_up": {
     "1": [
       "e610b5a5-68ba-4da7-8380-deaaa97875e4"
     ]

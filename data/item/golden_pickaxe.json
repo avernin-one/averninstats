@@ -1,12 +1,19 @@
 {
-  "broken": {
-    "1": [
-      "558f133f-76b7-43c3-8cbc-29bc2e04a10a"
+  "picked_up": {
+    "3": [
+      "7e8dbd52-f0ac-4eb6-a33d-b708225c7553"
     ]
   },
   "used": {
     "32": [
-      "558f133f-76b7-43c3-8cbc-29bc2e04a10a"
+      "558f133f-76b7-43c3-8cbc-29bc2e04a10a",
+      "c33d5469-9c7c-4da8-8d90-6baac45dbbde"
+    ]
+  },
+  "broken": {
+    "1": [
+      "558f133f-76b7-43c3-8cbc-29bc2e04a10a",
+      "c33d5469-9c7c-4da8-8d90-6baac45dbbde"
     ]
   }
 }

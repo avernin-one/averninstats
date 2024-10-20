@@ -1,0 +1,23 @@
+{{- $logo := resources.Get "images/logo.png" }}
+<div class="main_menu">
+    <div>
+        <a href="/highscores" class="nohover"><img src="{{ $logo.RelPermalink }}" /></a>
+    </div>
+    {{- range site.Menus.main }}
+    <div>
+        <a href="{{ .URL }}">{{ strings.FirstUpper .Name }}</a>
+    </div>
+    {{- end }}
+</div>
+<div class="section_menu">
+    <div class="section_menu_top">
+        <h1>{{- strings.FirstUpper .Section }}</h1>
+        <input type="text" name="search_input" placeholder="Filter..." oninput="searchChange(this)">
+    </div>
+    {{- range index site.Menus .Section }}
+    {{- $itemName := cond (eq $.Section "players") .Name (T .Name) }}
+    {{- $href := cond (eq $.Section "highscores") (printf "#%s" .Name) .Page.Path }}
+    <div class="entry"><a href="{{ $href }}" onclick="scrollToStats(this)">{{ $itemName }}</a>
+    </div>
+    {{- end }}
+</div>

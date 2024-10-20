@@ -1,0 +1,12 @@
+public/
+demo_stats/
+resources/
+content/
+.vscode
+*.lock
+*.bak
+*_bak
+i18n/
+content/
+cache/
+assets/images/players/

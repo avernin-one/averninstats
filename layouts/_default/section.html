@@ -1,0 +1,18 @@
+{{- define "content" }}
+  {{- if eq .Section "players" }}
+    {{- $section := index (index site.Menus .Section) 0 }}
+      {{- if $section.Page.Path }}
+        {{- with .Site.GetPage $section.Page.Path }}
+          {{- partial "player_stats" (dict "context" . "heading" $section.Name "stats" .Params.stats) }}
+        {{- end }}
+    {{- end }}
+  {{- else if eq .Section "highscores" }}
+    {{- partial "stats_grid_wrapper" . }}
+  {{- else }}
+    {{- with .Site.GetPage .Section }}
+      {{- with (index .Pages 0) }}
+        {{- partial "stats_grid_wrapper" . }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}

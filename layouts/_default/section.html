@@ -3,7 +3,7 @@
     {{- $section := index (index site.Menus .Section) 0 }}
       {{- if $section.Page.Path }}
         {{- with .Site.GetPage $section.Page.Path }}
-          {{- partial "player_stats" (dict "context" . "heading" $section.Name "stats" .Params.stats) }}
+        {{- partial "player_stats" (dict "context" . "heading" .Title "stats" .Params.stats "medals" .Params.medals "scores" .Params.scores) }}
         {{- end }}
     {{- end }}
   {{- else if eq .Section "highscores" }}

@@ -2,21 +2,57 @@
 <h2>{{ .heading }} <span></span></h2>
 <div class="player">
     <div class="avatar">
-        <img src="{{ $playerImage.Permalink }}">
-        <div class="medals">🥇{{ index .medals "gold" }} 🥈{{ index .medals "silver" }} 🥉{{ index .medals "bronze" }}
+        <div class="avatar_body">
+            <img src="{{ $playerImage.Permalink }}">
+        </div>
+        <div class="medals">
+            <span>🥇{{ index .medals "gold" }}</span>
+            <span>🥈{{ index .medals "silver" }}</span>
+            <span>🥉{{ index .medals "bronze" }}</span>
+        </div>
+        <div class="custom_stats">
+            <div class="stats_grid">
+                <div class="stats_table">
+                    <div class="stats_table_header">STATISTIC</div>
+                    <div class="stats_table_header count">COUNT</div>
+                    {{- $i := 1 }}
+                    {{ range $k, $v := .stats }}
+                    {{- $even := (cond (modBool $i 2) "" " even") }}
+                    <div class="player_name{{ $even }}">{{ T $k }}</div>
+                    <div class="player_count{{ $even }}">{{ $v }}</div>
+                    {{- $i = add $i 1 }}
+                    {{ end }}
+                </div>
+            </div>
         </div>
     </div>
-    <div class="stats_grid">
-        <div class="stats_table">
-            <div class="stats_table_header">PLAYERNAME</div>
-            <div class="stats_table_header count">COUNT</div>
-            {{- $i := 1 }}
-            {{ range $k, $v := .stats }}
-            {{- $even := (cond (modBool $i 2) "" " even") }}
-            <div class="player_name more_space{{ $even }}">{{ T $k }}</div>
-            <div class="player_count more_space{{ $even }}">{{ $v }}</div>
-            {{- $i = add $i 1 }}
-            {{ end }}
+    <div class="stats_tables">
+        {{- range $statsCategoy, $data := .scores }}
+        <h3 class="">{{ strings.FirstUpper $statsCategoy }}</h3>
+        <div class="stats_grid">
+            {{- range $statsType, $statsList := $data }}
+            <div class="stats_table">
+                <div class="stats_table_header">{{ strings.ToUpper (T $statsType) }}</div>
+                <div class="stats_table_header count">COUNT</div>
+                {{- $s := slice }}
+                {{- range $k, $v := $statsList }}
+                    {{- $s = $s | append $k }}
+                {{- end }}
+                {{- $s = $s | sort | collections.Reverse }}
+                {{- $i := 1 }}
+                {{ range $s }}
+                    {{- $even := (cond (modBool $i 2) "" " even") }}
+                <div class="player_name{{ $even }}">
+                    {{- range (index $statsList .) }}
+                    <div>{{ T . }}</div>
+                    {{- end }}
+                </div>
+                <div class="player_count{{ $even }}">{{ . }}</div>
+                    {{- $i = add $i 1 }}
+                {{ end }}
+            </div>
+            {{- end }}
         </div>
+        {{- end }}
     </div>
 </div>

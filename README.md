@@ -20,14 +20,14 @@ $ cd averninstats
 $ docker run \
     --rm \
     --user $(id -u):$(id -g) \
-    -v "/path/to/world/stats/:/source:ro" \
-    -v ".:/output:rw" \
+    --volume "/path/to/world/stats/:/source:ro" \
+    --volume ".:/output:rw" \
     linogics/averninstats:latest \
     -url stats.avernin.one \
 $ docker run \
     --rm \
     --user $(id -u):$(id -g) \
-    -v ".:/src" \
+    --volume ".:/src" \
     hugomods/hugo:exts-non-root \
     --minify
 
@@ -35,8 +35,8 @@ $ docker run \
 $ docker run \
     --rm \
     --user $(id -u):$(id -g) \
-    -v ".:/src" \
-    -p 1313:1313 \
+    --volume ".:/src" \
+    --publish 1313:1313 \
     hugomods/hugo:exts-non-root \
     server
 ```

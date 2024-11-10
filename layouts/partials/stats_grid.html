@@ -1,11 +1,11 @@
 {{- range $statsTitle, $data := .Params.stats }}
-{{- $s := slice }}
-{{- range $k, $v := $data }}
-{{- $s = $s | append $k }}
-{{- end }}
-{{- $s = $s | sort | collections.Reverse }}
+    {{- $s := slice }}
+    {{- range $k, $v := $data }}
+        {{- $s = $s | append $k }}
+    {{- end }}
+    {{- $s = $s | sort | collections.Reverse }}
 <div class="stats_wrapper">
-    <h3 id="{{- $statsTitle }}">{{- strings.FirstUpper (T $statsTitle) }}</h3>
+    <h3 id="{{- $statsTitle }}">{{- strings.FirstUpper ( T $statsTitle) }}</h3>
     <div class="stats_table">
         <div class="stats_table_header">PLAYERNAME</div>
         <div class="stats_table_header count">COUNT</div>
@@ -17,14 +17,20 @@
             <div class="entry">
                 {{- $playerHead := resources.Get (printf "images/players/head_%s.png" .) }}
                 <img src="{{- $playerHead.Permalink }}">
-                {{- if eq (printf "%T" .) "string" }}<a href="/players/{{ strings.ToLower . }}">{{- . | truncate 24
-                    }}</a>{{- end
-                }}
+                {{- if eq (printf "%T" .) "string" }}<a href="/players/{{ strings.ToLower . }}">{{- . | truncate 24 }}</a>{{- end }}
             </div>
             {{- end }}
         </div>
         <div class="player_count{{- $even }}">
-            {{- . }}
+            {{- $val := . }}
+            {{- if eq $statsTitle "play_time" }}
+                {{ $duration := time.Duration "second" (math.Div (cast.ToInt $val) 20) }}
+                {{ $days := cast.ToInt (math.Div $duration.Hours 24) }}
+                {{ $hours := cast.ToInt (math.Mod $duration.Hours 24) }}
+                {{ $minutes := cast.ToInt (math.Mod $duration.Minutes 60) }}
+                {{ $val = fmt.Printf "%dd %dh %dm" $days $hours $minutes }}
+            {{- end }}
+            {{- $val }}
         </div>
         {{- $i = add $i 1 }}
         {{- end }}

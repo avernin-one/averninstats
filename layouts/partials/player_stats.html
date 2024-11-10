@@ -17,10 +17,17 @@
                     <div class="stats_table_header count">COUNT</div>
                     {{- $i := 1 }}
                     {{ range $k, $v := .stats }}
-                    {{- $even := (cond (modBool $i 2) "" " even") }}
+                        {{- $even := (cond (modBool $i 2) "" " even") }}
+                        {{- if eq $k "play_time" }}
+                            {{ $duration := time.Duration "second" (math.Div $v 20) }}
+                            {{ $days := cast.ToInt (math.Div $duration.Hours 24) }}
+                            {{ $hours := cast.ToInt (math.Mod $duration.Hours 24) }}
+                            {{ $minutes := cast.ToInt (math.Mod $duration.Minutes 60) }}
+                            {{ $v = fmt.Printf "%dd %dh %dm" $days $hours $minutes }}
+                        {{- end }}
                     <div class="player_name{{ $even }}">{{ T $k }}</div>
                     <div class="player_count{{ $even }}">{{ $v }}</div>
-                    {{- $i = add $i 1 }}
+                        {{- $i = add $i 1 }}
                     {{ end }}
                 </div>
             </div>

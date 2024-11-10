@@ -1,11 +1,6 @@
 {{- define "content" }}
   {{- if eq .Section "players" }}
-    {{- $section := index (index site.Menus .Section) 0 }}
-      {{- if $section.Page.Path }}
-        {{- with .Site.GetPage $section.Page.Path }}
-        {{- partial "player_stats" (dict "context" . "heading" .Title "stats" .Params.stats "medals" .Params.medals "scores" .Params.scores) }}
-        {{- end }}
-    {{- end }}
+    {{- partial "heads_grid" (dict "sections" (index site.Menus .Section)) }}
   {{- else if eq .Section "highscores" }}
     {{- partial "stats_grid_wrapper" . }}
   {{- else }}

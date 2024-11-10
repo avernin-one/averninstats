@@ -10,7 +10,6 @@ You can view a live demo (hosted on github.com) at the following URL:
 ## Prerequisites
 
 - [Git](https://git-scm.com/downloads)
-- [Hugo](https://gohugo.io/installation) (extended)
 - [Docker](https://docs.docker.com/manuals)
 
 ## HowTo
@@ -25,8 +24,19 @@ $ docker run \
     -v ".:/output:rw" \
     linogics/averninstats:latest \
     -url stats.avernin.one \
-$ hugo --minify
+$ docker run \
+    --rm \
+    --user $(id -u):$(id -g) \
+    -v ".:/src" \
+    hugomods/hugo:exts-non-root \
+    --minify
 
-# or if you want to access the rendered pages locally
-$ hugo server
+# ALTERNATIVE: if you want to access the generated website locally
+$ docker run \
+    --rm \
+    --user $(id -u):$(id -g) \
+    -v ".:/src" \
+    -p 1313:1313 \
+    hugomods/hugo:exts-non-root \
+    server
 ```

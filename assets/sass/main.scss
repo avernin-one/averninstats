@@ -181,7 +181,7 @@ main {
     grid-template-areas:
         "main_menu section_menu content";
 
-    .main_menu {
+    nav {
         margin: 0;
         padding: 1em 2em;
         display: grid;
@@ -390,14 +390,9 @@ main {
                 border: none;
                 margin: 0;
                 padding: 0;
-
             }
-
-
         }
-
     }
-
 }
 
 footer {

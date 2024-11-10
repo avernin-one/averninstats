@@ -2,18 +2,20 @@
 <html>
 
 <head>
+    {{- $sass := resources.Get "sass/main.scss" }}
+    {{- $style := $sass | css.Sass | resources.Fingerprint }}
+    {{- $favicon := resources.Get "images/favicon.png" }}
+    {{- $js := resources.Get "js/main.js" }}
     <title>averninstats - {{ strings.FirstUpper .Section }}</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="date" content="{{ time.Now }}">
-    {{- $favicon := resources.Get "images/favicon.png" }}
     <link rel="icon" type="image/png" href="{{ $favicon.Permalink }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/modern-normalize/3.0.1/modern-normalize.min.css"
         integrity="sha512-q6WgHqiHlKyOqslT/lgBgodhd03Wp4BEqKeW6nNtlOY4quzyG3VoQKFrieaCeSnuVseNKRGpGeDU3qPmabCANg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer" />
-    {{- $sass := resources.Get "sass/main.scss" }}
-    {{- $style := $sass | css.Sass | resources.Fingerprint }}
+        crossorigin="anonymous" referrerpolicy="no-referrer">
     <link rel="stylesheet" href="{{ $style.Permalink }}">
+    <script src="{{ $js.Permalink }}" defer></script>
     {{ block "extra_meta" . }}{{ end }}
 </head>
 
@@ -30,63 +32,6 @@
     <footer>
         {{ partial "footer.html" . }}
     </footer>
-    <script>
-        let toggleButton;
-        let darkButton = "🌑"
-        let lightButton = "🌕"
-        let lastModeKey = "lastMode"
-
-        window.addEventListener("load", (event) => {
-            toggleButton = document.getElementById("toggleButton")
-            lastMode = localStorage.getItem(lastModeKey)
-
-            if (lastMode && lastMode == "light" || window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-                document.body.classList.add("light");
-                toggleButton.innerText = darkButton
-                localStorage.setItem(lastModeKey, "light")
-            } else {
-                toggleButton.innerText = lightButton
-                localStorage.setItem(lastModeKey, "dark")
-            }
-        });
-
-        function searchChange(source) {
-            search = source.value.toLowerCase();
-            sectionMenu = document.querySelector("div.section_menu")
-            elements = sectionMenu.querySelectorAll("div.entry");
-            elements.forEach((e) => {
-                let anchor = e.querySelector("a");
-                let text = anchor.innerText.toLowerCase();
-
-                if (search == "" || text.includes(search)) {
-                    e.classList.remove("hide");
-                } else {
-                    e.classList.add("hide");
-                }
-            });
-        }
-
-        function toggleMode(el) {
-            document.body.classList.toggle("light");
-
-            if (document.body.classList.contains("light")) {
-                toggleButton.innerText = darkButton
-                localStorage.setItem(lastModeKey, "light")
-            } else {
-                toggleButton.innerText = lightButton
-                localStorage.setItem(lastModeKey, "dark")
-            }
-        }
-
-        function scrollToStats(el) {
-            let target = document.getElementById(el.hash.replace("#", ""));
-
-            if (target && target != null) {
-                target.classList.remove("glow");
-                target.classList.add("glow");
-            }
-        }
-    </script>
 </body>
 
 </html>

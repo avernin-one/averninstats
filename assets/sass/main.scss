@@ -8,6 +8,7 @@
     --black-line: #1e1e1e;
     --highlight: #01579b;
     --highlight-table: #e91e63;
+    --slightly-dark: #797979;
     --dark: #414141;
     --darker: #313131;
     --darkest: #212121;
@@ -242,13 +243,15 @@ main {
                 grid-auto-rows: min-content;
 
                 .stats_table_header {
-                    font-size: .9em;
+                    font-size: 1em;
                     color: var(--highlight);
                     padding: .4em 0;
                 }
 
                 .count {
+                    color: var(--slightly-dark);
                     text-align: right;
+                    font-family: "Source Code Pro", monospace;
                 }
 
                 .player_name {
@@ -268,6 +271,7 @@ main {
                     padding-right: .4em;
                     justify-content: end;
                     align-items: center;
+                    font-family: "Source Code Pro", monospace;
                 }
 
             }
@@ -305,6 +309,7 @@ main {
 
                     span {
                         padding: 0 .5em;
+                        font-family: "Source Code Pro", monospace;
                     }
                 }
 
@@ -331,9 +336,54 @@ main {
             font-size: 0px;
 
             a {
+                display: inline-block;
+                position: relative;
+                width: 96px;
                 border: none;
                 margin: 0;
                 padding: 0;
+
+                img {
+                    display: block;
+                    width: 100%;
+                    height: auto;
+                    border: 0;
+                    margin: 0;
+                    padding: 0;
+                }
+
+                .head_text_overlay {
+                    position: absolute;
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    grid-template-rows: 1fr;
+                    gap: 0em 0em;
+                    justify-items: center;
+                    align-items: center;
+                    padding: .3em;
+                    top: 0;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    height: 100%;
+                    width: 100%;
+                    opacity: 0;
+                    background-color: var(--black);
+                    color: var(--text-color);
+                    font-size: initial;
+                    text-align: center;
+
+                    &:hover {
+                        opacity: .75;
+                    }
+
+                    .header_text {
+                        width: 100%;
+                        font: 300 1em "Source Code Pro", monospace;
+                        word-break: break-all;
+                    }
+                }
+
             }
 
             a:hover {
@@ -343,13 +393,9 @@ main {
 
             }
 
-            img {
-                display: inline-block;
-                border: 0;
-                margin: 0;
-                padding: 0;
-            }
+
         }
+
     }
 
 }

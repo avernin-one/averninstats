@@ -2,6 +2,9 @@
     <div clas="heads_wrapper">
         {{- range .sections }}
         <a href="{{ .Page.Path }}">
+            <div class="head_text_overlay">
+                <span class="header_text">{{ .Title }}</span>
+            </div>
             <img src="/images/players/head_{{ .Title }}.png" title="{{ .Title }}">
         </a>
         {{- end }}

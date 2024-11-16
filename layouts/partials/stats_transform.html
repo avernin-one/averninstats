@@ -1,0 +1,19 @@
+{{- $val := cast.ToInt .value }}
+{{- if strings.Contains .name "time" }}
+    {{- $duration := time.Duration "second" (math.Div $val 20) }}
+    {{- $days := cast.ToInt (math.Div $duration.Hours 24) }}
+    {{- $daysStr := compare.Conditional (gt $days 0) (fmt.Printf "%dd " $days) "" }}
+    {{- $hours := cast.ToInt (math.Mod $duration.Hours 24) }}
+    {{- $hoursStr := compare.Conditional (gt $hours 0) (fmt.Printf "%dh " $hours) "" }}
+    {{- $minutes := cast.ToInt (math.Mod $duration.Minutes 60) }}
+    {{- $val = fmt.Printf "%s%s%dm" $daysStr $hoursStr $minutes }}
+{{- else if strings.HasSuffix .name "_one_cm" }}
+    {{- $kilometers := cast.ToInt (math.Div $val 100000) }}
+    {{- $kilometersStr := compare.Conditional (gt $kilometers 0) (fmt.Printf "%dkm " $kilometers) "" }}
+    {{- $meters := cast.ToInt (math.Mod (math.Mod $val 100000) 100) }}
+    {{- $metersStr := compare.Conditional (gt $meters 0) (fmt.Printf "%dm " $meters) "" }}
+    {{- $centimeters := cast.ToInt (math.Mod $val 100) }}
+    {{- $centimetersStr := compare.Conditional (gt $centimeters 0) (fmt.Printf "%dcm" $centimeters) "" }}
+    {{- $val = fmt.Printf "%s%s%s" $kilometersStr $metersStr $centimetersStr }}
+{{- end }}
+{{- $val }}

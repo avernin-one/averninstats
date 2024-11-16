@@ -5,46 +5,27 @@
 {{- end }}
 {{- $s = $s | sort | collections.Reverse }}
 <div class="stats_wrapper">
-  <h3 id="{{- $statsTitle }}">{{- strings.FirstUpper ( T $statsTitle) }}</h3>
-  <div class="stats_table">
-    <div class="stats_table_header">PLAYER</div>
-    <div class="stats_table_header count">COUNT</div>
-    {{- $i := 1 }}
-    {{- range $s }}
-    {{- $even := (compare.Conditional (modBool $i 2) "" " even") }}
-    <div class="player_name{{- $even }}">
+    <h3 id="{{- $statsTitle }}">{{- strings.FirstUpper ( T $statsTitle) }}</h3>
+    <div class="stats_table">
+      <div class="stats_table_header">PLAYERNAME</div>
+      <div class="stats_table_header count">COUNT</div>
+      {{- $i := 1 }}
+      {{- range $s }}
+      {{- $even := (compare.Conditional (modBool $i 2) "" " even") }}
+      <div class="player_name{{- $even }}">
         {{- range (index $data .) }}
         <div class="entry">
-            {{- $playerHead := resources.Get (fmt.Printf "images/players/head_%s.png" .) }}
-            <img src="{{- $playerHead.Permalink }}">
-            {{- if eq (fmt.Printf "%T" .) "string" }}<a href="/players/{{ strings.ToLower . }}">{{- . | truncate 24 }}</a>{{- end }}
+          {{- $playerHead := resources.Get (fmt.Printf "images/players/head_%s.png" .) }}
+          <img src="{{- $playerHead.Permalink }}">
+          {{- if eq (fmt.Printf "%T" .) "string" }}<a href="/players/{{ strings.ToLower . }}">{{- . | truncate 24 }}</a>{{- end }}
         </div>
         {{- end }}
-    </div>
-    <div class="player_count{{- $even }}">
-      {{- $val := . }}
-      {{- if strings.Contains $statsTitle "time" }}
-        {{- $duration := time.Duration "second" (math.Div (cast.ToInt $val) 20) }}
-        {{- $days := cast.ToInt (math.Div $duration.Hours 24) }}
-        {{- $daysStr := compare.Conditional (gt $days 0) (fmt.Printf "%dd " $days) "" }}
-        {{- $hours := cast.ToInt (math.Mod $duration.Hours 24) }}
-        {{- $hoursStr := compare.Conditional (gt $hours 0) (fmt.Printf "%dh " $hours) "" }}
-        {{- $minutes := cast.ToInt (math.Mod $duration.Minutes 60) }}
-        {{- $val = fmt.Printf "%s%s%dm" $daysStr $hoursStr $minutes }}
-      {{- else if strings.HasSuffix $statsTitle "_one_cm" }}
-        {{- $val = cast.ToInt $val }}
-        {{- $kilometers := cast.ToInt (math.Div $val 100000) }}
-        {{- $kilometersStr := compare.Conditional (gt $kilometers 0) (fmt.Printf "%dkm " $kilometers) "" }}
-        {{- $meters := cast.ToInt (math.Mod (math.Mod $val 100000) 100) }}
-        {{- $metersStr := compare.Conditional (gt $meters 0) (fmt.Printf "%dm " $meters) "" }}
-        {{- $centimeters := cast.ToInt (math.Mod $val 100) }}
-        {{- $centimetersStr := compare.Conditional (gt $centimeters 0) (fmt.Printf "%dcm" $centimeters) "" }}
-        {{- $val = fmt.Printf "%s%s%s" $kilometersStr $metersStr $centimetersStr }}
+      </div>
+      <div class="player_count{{- $even }}">
+        {{- partials.Include "stats_transform" (dict "name" $statsTitle "value" .) }}
+      </div>
+      {{- $i = add $i 1 }}
       {{- end }}
-      {{- $val }}
     </div>
-    {{- $i = add $i 1 }}
-    {{- end }}
-  </div>
 </div>
 {{- end }}

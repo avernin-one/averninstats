@@ -21,7 +21,7 @@
               {{- if strings.Contains $k "time" }}
                 {{- $duration := time.Duration "second" (math.Div $v 20) }}
                 {{- $days := cast.ToInt (math.Div $duration.Hours 24) }}
-                {{- $daysStr := $v (gt $days 0) (fmt.Printf "%dd " $days) "" }}
+                {{- $daysStr := compare.Conditional (gt $days 0) (fmt.Printf "%dd " $days) "" }}
                 {{- $hours := cast.ToInt (math.Mod $duration.Hours 24) }}
                 {{- $hoursStr := compare.Conditional (gt $hours 0) (fmt.Printf "%dh " $hours) "" }}
                 {{- $minutes := cast.ToInt (math.Mod $duration.Minutes 60) }}

@@ -2,36 +2,34 @@
 <html>
 
 <head>
-    {{- $sass := resources.Get "sass/main.scss" }}
-    {{- $style := $sass | css.Sass | resources.Fingerprint }}
-    {{- $favicon := resources.Get "images/favicon.png" }}
-    {{- $js := resources.Get "js/main.js" }}
-    <title>averninstats - {{ strings.FirstUpper .Section }}</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="date" content="{{ time.Now }}">
-    <link rel="icon" type="image/png" href="{{ $favicon.Permalink }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/modern-normalize/3.0.1/modern-normalize.min.css"
-        integrity="sha512-q6WgHqiHlKyOqslT/lgBgodhd03Wp4BEqKeW6nNtlOY4quzyG3VoQKFrieaCeSnuVseNKRGpGeDU3qPmabCANg=="
-        crossorigin="anonymous" referrerpolicy="no-referrer">
-    <link rel="stylesheet" href="{{ $style.Permalink }}">
-    <script src="{{ $js.Permalink }}" defer></script>
-    {{ block "extra_meta" . }}{{ end }}
+  {{- $sass := resources.Get "sass/main.scss" }}
+  {{- $style := $sass | css.Sass | resources.Fingerprint }}
+  {{- $favicon := resources.Get "images/favicon.png" }}
+  {{- $js := resources.Get "js/main.js" }}
+  <title>{{ .Site.Title }} - {{ strings.FirstUpper .Section }}</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="date" content="{{ time.Now }}">
+  <link rel="icon" type="image/png" href="{{ $favicon.Permalink }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/modern-normalize/3.0.1/modern-normalize.min.css" integrity="sha512-q6WgHqiHlKyOqslT/lgBgodhd03Wp4BEqKeW6nNtlOY4quzyG3VoQKFrieaCeSnuVseNKRGpGeDU3qPmabCANg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <link rel="stylesheet" href="{{ $style.Permalink }}">
+  <script src="{{ $js.Permalink }}" defer></script>
+  {{ block "extra_meta" . }}{{ end }}
 </head>
 
 <body>
-    <header>
-        {{ partial "header.html" . }}
-    </header>
-    <main>
-        {{ partial "main_menu.html" . }}
-        <div class="content">
-            {{ block "content" . }}{{ end }}
-        </div>
-    </main>
-    <footer>
-        {{ partial "footer.html" . }}
-    </footer>
+  <header>
+    {{ partials.Include "header.html" . }}
+  </header>
+  <main>
+    {{ partials.Include "main_menu.html" . }}
+    <div class="content">
+      {{ block "content" . }}{{ end }}
+    </div>
+  </main>
+  <footer>
+    {{ partials.Include "footer.html" . }}
+  </footer>
 </body>
 
 </html>

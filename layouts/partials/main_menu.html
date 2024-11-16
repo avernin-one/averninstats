@@ -1,22 +1,22 @@
 {{- $logo := resources.Get "images/logo.png" }}
-<nav>
-    <div>
-        <a href="/highscores" class="nohover"><img src="{{ $logo.RelPermalink }}" /></a>
-    </div>
-    {{- range site.Menus.main }}
-    <div>
-        <a href="{{ .URL }}">{{ strings.FirstUpper .Name }}</a>
-    </div>
-    {{- end }}
+<nav class="main_menu">
+  <div>
+    <a href="/highscores" class="nohover"><img src="{{ $logo.RelPermalink }}" /></a>
+  </div>
+  {{- range site.Menus.main }}
+  <div>
+    <a href="{{ .URL }}">{{ strings.FirstUpper .Name }}</a>
+  </div>
+  {{- end }}
 </nav>
 <aside class="section_menu">
     <search class="section_menu_top">
-        <h1>{{- strings.FirstUpper .Section }}</h1>
-        <input type="text" name="search_input" placeholder="Filter...">
+      <h1>{{- strings.FirstUpper .Section }}</h1>
+      <input type="text" name="search_input" placeholder="Filter...">
     </search>
     {{- range index site.Menus .Section }}
-    {{- $itemName := cond (eq $.Section "players") .Name (T .Name) }}
-    {{- $href := cond (eq $.Section "highscores") (printf "#%s" .Name) .Page.Path }}
+      {{- $itemName := compare.Conditional (eq $.Section "players") .Name (T .Name) }}
+      {{- $href := compare.Conditional (eq $.Section "highscores") (fmt.Printf "#%s" .Name) .Page.Path }}
     <div class="entry"><a href="{{ $href }}">{{ $itemName }}</a>
     </div>
     {{- end }}

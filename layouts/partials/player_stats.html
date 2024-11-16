@@ -1,67 +1,76 @@
-{{- $playerImage := resources.Get (printf "images/players/body_%s.png" .heading) }}
+{{- $playerImage := resources.Get (fmt.Printf "images/players/body_%s.png" .heading) }}
 <h2>{{ .heading }} <span></span></h2>
 <div class="player">
-    <div class="avatar">
-        <div class="avatar_body">
-            <img src="{{ $playerImage.Permalink }}">
-        </div>
-        <div class="medals">
-            <span>🥇{{ index .medals "gold" }}</span>
-            <span>🥈{{ index .medals "silver" }}</span>
-            <span>🥉{{ index .medals "bronze" }}</span>
-        </div>
-        <div class="custom_stats">
-            <div class="stats_grid">
-                <div class="stats_table">
-                    <div class="stats_table_header">STATISTIC</div>
-                    <div class="stats_table_header count">COUNT</div>
-                    {{- $i := 1 }}
-                    {{ range $k, $v := .stats }}
-                        {{- $even := (cond (modBool $i 2) "" " even") }}
-                        {{- if strings.Contains $k "time" }}
-                            {{- $duration := time.Duration "second" (math.Div $v 20) }}
-                            {{- $days := cast.ToInt (math.Div $duration.Hours 24) }}
-                            {{- $daysStr := cond (gt $days 0) (printf "%dd " $days) "" }}
-                            {{- $hours := cast.ToInt (math.Mod $duration.Hours 24) }}
-                            {{- $hoursStr := cond (gt $hours 0) (printf "%dh " $hours) "" }}
-                            {{- $minutes := cast.ToInt (math.Mod $duration.Minutes 60) }}
-                            {{- $v = fmt.Printf "%s%s%dm" $daysStr $hoursStr $minutes }}
-                        {{- end }}
-                    <div class="player_name{{ $even }}">{{ T $k }}</div>
-                    <div class="player_count{{ $even }}">{{ $v }}</div>
-                        {{- $i = add $i 1 }}
-                    {{ end }}
-                </div>
-            </div>
-        </div>
+  <div class="avatar">
+    <div class="avatar_body">
+        <img src="{{ $playerImage.Permalink }}">
     </div>
-    <div class="stats_tables">
-        {{- range $statsCategoy, $data := .scores }}
-        <h3 class="">{{ strings.FirstUpper $statsCategoy }}</h3>
-        <div class="stats_grid">
-            {{- range $statsType, $statsList := $data }}
-            <div class="stats_table">
-                <div class="stats_table_header">{{ strings.ToUpper (T $statsType) }}</div>
-                <div class="stats_table_header count">COUNT</div>
-                {{- $s := slice }}
-                {{- range $k, $v := $statsList }}
-                    {{- $s = $s | append $k }}
-                {{- end }}
-                {{- $s = $s | sort | collections.Reverse }}
-                {{- $i := 1 }}
-                {{ range $s }}
-                    {{- $even := (cond (modBool $i 2) "" " even") }}
-                <div class="player_name{{ $even }}">
-                    {{- range (index $statsList .) }}
-                    <div>{{ T . }}</div>
-                    {{- end }}
-                </div>
-                <div class="player_count{{ $even }}">{{ . }}</div>
-                    {{- $i = add $i 1 }}
-                {{ end }}
-            </div>
+    <div class="medals">
+        <span>🥇{{ index .medals "gold" }}</span>
+        <span>🥈{{ index .medals "silver" }}</span>
+        <span>🥉{{ index .medals "bronze" }}</span>
+    </div>
+    <div class="custom_stats">
+      <div class="stats_grid">
+        <div class="stats_table">
+            <div class="stats_table_header">STATISTIC</div>
+            <div class="stats_table_header count">COUNT</div>
+            {{- $i := 1 }}
+            {{ range $k, $v := .stats }}
+              {{- $even := (compare.Conditional (modBool $i 2) "" " even") }}
+              {{- if strings.Contains $k "time" }}
+                {{- $duration := time.Duration "second" (math.Div $v 20) }}
+                {{- $days := cast.ToInt (math.Div $duration.Hours 24) }}
+                {{- $daysStr := $v (gt $days 0) (fmt.Printf "%dd " $days) "" }}
+                {{- $hours := cast.ToInt (math.Mod $duration.Hours 24) }}
+                {{- $hoursStr := compare.Conditional (gt $hours 0) (fmt.Printf "%dh " $hours) "" }}
+                {{- $minutes := cast.ToInt (math.Mod $duration.Minutes 60) }}
+                {{- $v = fmt.Printf "%s%s%dm" $daysStr $hoursStr $minutes }}
+              {{- else if strings.HasSuffix $k "_one_cm" }}
+                {{- $v = cast.ToInt $v }}
+                {{- $kilometers := cast.ToInt (math.Div $v 100000) }}
+                {{- $kilometersStr := compare.Conditional (gt $kilometers 0) (fmt.Printf "%dkm " $kilometers) "" }}
+                {{- $meters := cast.ToInt (math.Mod (math.Mod $v 100000) 100) }}
+                {{- $metersStr := compare.Conditional (gt $meters 0) (fmt.Printf "%dm " $meters) "" }}
+                {{- $centimeters := cast.ToInt (math.Mod $v 100) }}
+                {{- $centimetersStr := compare.Conditional (gt $centimeters 0) (fmt.Printf "%dcm" $centimeters) "" }}
+                {{- $v = fmt.Printf "%s%s%s" $kilometersStr $metersStr $centimetersStr }}
+              {{- end }}
+            <div class="player_name{{ $even }}">{{ T $k }}</div>
+            <div class="player_count{{ $even }}">{{ $v }}</div>
+                {{- $i = add $i 1 }}
+            {{ end }}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="stats_tables">
+      {{- range $statsCategoy, $data := .scores }}
+      <h3 class="">{{ strings.FirstUpper $statsCategoy }}</h3>
+      <div class="stats_grid">
+        {{- range $statsType, $statsList := $data }}
+        <div class="stats_table">
+            <div class="stats_table_header">{{ strings.ToUpper (T $statsType) }}</div>
+            <div class="stats_table_header count">COUNT</div>
+            {{- $s := slice }}
+            {{- range $k, $v := $statsList }}
+                {{- $s = $s | append $k }}
             {{- end }}
+            {{- $s = $s | sort | collections.Reverse }}
+            {{- $i := 1 }}
+            {{ range $s }}
+                {{- $even := (compare.Conditional (modBool $i 2) "" " even") }}
+            <div class="player_name{{ $even }}">
+                {{- range (index $statsList .) }}
+                <div>{{ T . }}</div>
+                {{- end }}
+            </div>
+            <div class="player_count{{ $even }}">{{ . }}</div>
+                {{- $i = add $i 1 }}
+            {{ end }}
         </div>
         {{- end }}
-    </div>
+      </div>
+      {{- end }}
+  </div>
 </div>

@@ -1,13 +1,13 @@
 {{- if eq .Section "highscores" }}
-{{- with .Site.GetPage .Section }}
+  {{- with .Site.GetPage .Section }}
 <div class="stats_grid">
-  {{- range .Pages }}
-    {{- partial "stats_grid" . }}
+    {{- range .Pages }}
+      {{- partials.Include "stats_grid" . }}
+    {{- end }}
   {{- end }}
-{{- end }}
 {{- else }}
-<h2>{{ T .LinkTitle }}</h2>
-<div class="stats_grid">
-  {{- partial "stats_grid" . }}
-{{- end }}
-</div>
+  <h2>{{ T .LinkTitle }}</h2>
+  <div class="stats_grid">
+    {{- partials.Include "stats_grid" . }}
+    {{- end }}
+  </div>

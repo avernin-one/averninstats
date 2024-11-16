@@ -1,7 +1,27 @@
 <div class="header_left">
-    <a href="/highscores" class="nohover">averninstats</a>
+    <a href="/highscores" class="nohover">{{ .Site.Title }}</a>
 </div>
 <div class="header_right">
-    <a href="https://vote.avernin.one" target="_blank">Vote</a> | <a href="https://discord.avernin.one"
-        target="_blank">Discord</a> | <button id="toggleButton"></button>
+    {{- if gt (.Site.Params.header.extraLinks | len) 0 }}
+        {{- range $elem := .Site.Params.header.extraLinks }}
+    <a href="{{ $elem.url }}" target="{{ $elem.target }}">{{ $elem.name }}</a> | 
+        {{- end }}
+    {{- else }}
+    <a href="https://vote.avernin.one" target="_blank">Vote</a> | <a href="https://discord.avernin.one" target="_blank">Discord</a> | 
+    {{- end }}
+    <button id="toggleButton"></button>
+</div>
+
+<div class="header_left">
+    <a href="/highscores" class="nohover">{{ .Site.Title }}</a>
+</div>
+<div class="header_right">
+    {{- if and .Site.Params.header.extraLinks (gt (.Site.Params.header.extraLinks | len) 0) }}
+        {{- range $elem := .Site.Params.header.extraLinks }}
+    <a href="{{ $elem.url }}" target="{{ $elem.target }}">{{ $elem.name }}</a> |
+        {{- end }}
+    {{- else }}
+    <a href="https://vote.avernin.one" target="_blank">Vote</a> | <a href="https://discord.avernin.one" target="_blank">Discord</a> | 
+    {{- end }}
+    <button id="toggleButton"></button>
 </div>

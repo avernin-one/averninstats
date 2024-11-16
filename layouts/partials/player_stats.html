@@ -18,12 +18,14 @@
                     {{- $i := 1 }}
                     {{ range $k, $v := .stats }}
                         {{- $even := (cond (modBool $i 2) "" " even") }}
-                        {{- if eq $k "play_time" }}
-                            {{ $duration := time.Duration "second" (math.Div $v 20) }}
-                            {{ $days := cast.ToInt (math.Div $duration.Hours 24) }}
-                            {{ $hours := cast.ToInt (math.Mod $duration.Hours 24) }}
-                            {{ $minutes := cast.ToInt (math.Mod $duration.Minutes 60) }}
-                            {{ $v = fmt.Printf "%dd %dh %dm" $days $hours $minutes }}
+                        {{- if strings.Contains $k "time" }}
+                            {{- $duration := time.Duration "second" (math.Div $v 20) }}
+                            {{- $days := cast.ToInt (math.Div $duration.Hours 24) }}
+                            {{- $daysStr := cond (gt $days 0) (printf "%dd " $days) "" }}
+                            {{- $hours := cast.ToInt (math.Mod $duration.Hours 24) }}
+                            {{- $hoursStr := cond (gt $hours 0) (printf "%dh " $hours) "" }}
+                            {{- $minutes := cast.ToInt (math.Mod $duration.Minutes 60) }}
+                            {{- $v = fmt.Printf "%s%s%dm" $daysStr $hoursStr $minutes }}
                         {{- end }}
                     <div class="player_name{{ $even }}">{{ T $k }}</div>
                     <div class="player_count{{ $even }}">{{ $v }}</div>

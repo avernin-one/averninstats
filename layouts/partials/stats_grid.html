@@ -23,12 +23,14 @@
         </div>
         <div class="player_count{{- $even }}">
             {{- $val := . }}
-            {{- if eq $statsTitle "play_time" }}
-                {{ $duration := time.Duration "second" (math.Div (cast.ToInt $val) 20) }}
-                {{ $days := cast.ToInt (math.Div $duration.Hours 24) }}
-                {{ $hours := cast.ToInt (math.Mod $duration.Hours 24) }}
-                {{ $minutes := cast.ToInt (math.Mod $duration.Minutes 60) }}
-                {{ $val = fmt.Printf "%dd %dh %dm" $days $hours $minutes }}
+            {{- if strings.Contains $statsTitle "time" }}
+                {{- $duration := time.Duration "second" (math.Div (cast.ToInt $val) 20) }}
+                {{- $days := cast.ToInt (math.Div $duration.Hours 24) }}
+                {{- $daysStr := cond (gt $days 0) (printf "%dd " $days) "" }}
+                {{- $hours := cast.ToInt (math.Mod $duration.Hours 24) }}
+                {{- $hoursStr := cond (gt $hours 0) (printf "%dh " $hours) "" }}
+                {{- $minutes := cast.ToInt (math.Mod $duration.Minutes 60) }}
+                {{- $val = fmt.Printf "%s%s%dm" $daysStr $hoursStr $minutes }}
             {{- end }}
             {{- $val }}
         </div>

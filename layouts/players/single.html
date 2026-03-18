@@ -1,5 +1,0 @@
-{{- define "content" }}
-  {{- with .GetPage .Page.Path }}
-    {{- partials.Include "player_stats" (dict "context" . "heading" .Title "stats" .Params.stats "medals" .Params.medals "scores" .Params.scores) }}
-  {{- end }}
-{{- end }}

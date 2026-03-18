@@ -1,4 +1,0 @@
-{{ define "extra_meta" }}
-{{ $url := fmt.Printf "%s%s" .Site.BaseURL (index .Site.Menus.main.Sort.ByWeight 0).Identifier }}
-<meta http-equiv="refresh" content="0; url={{ $url }}">
-{{ end }}

@@ -236,24 +236,24 @@ main {
 .player-link:hover { color: var(--accent); text-decoration: none; }
 
 .head-img {
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   image-rendering: pixelated;
   border-radius: 2px;
 }
 
 /* ---- Player profile -------------------------------------- */
-.player-profile { max-width: 760px; }
+.player-profile {}
 
 .player-header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   gap: 1.5rem;
   margin-bottom: 1.8rem;
 }
 
 .body-img {
-  width: 80px;
+  width: 100px;
   image-rendering: pixelated;
   flex-shrink: 0;
 }

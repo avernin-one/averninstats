@@ -30,42 +30,52 @@ html {
   color: var(--text);
 }
 
+/* Full-height grid: nav row, content row, footer row */
 body {
   height: 100vh;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: var(--nav-h) 1fr auto;
   overflow: hidden;
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar) transparent;
 }
 
-a { color: var(--accent); text-decoration: none; }
-a:hover { color: var(--accent-hover); text-decoration: underline; }
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
 
-img { display: block; }
+a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
 
-/* ---- Headings -------------------------------------- */
+img {
+  display: block;
+}
+
+/* ---- Headings -------------------------------------------- */
 h1, h2, h3, h4, h5, h6 {
   color: var(--text);
   margin: .8rem;
 }
-
 
 /* ---- Top navigation -------------------------------------- */
 .topnav {
   position: sticky;
   top: 0;
   z-index: 100;
-  height: var(--nav-h);
   background: var(--bg-surface);
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   padding: 0 1.5rem;
   gap: 1.5rem;
 }
 
 .topnav .logo {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
   gap: 0.6rem;
   color: var(--text);
@@ -75,10 +85,11 @@ h1, h2, h3, h4, h5, h6 {
 .topnav .logo img { height: 32px; width: auto; border-radius: 4px; }
 
 .topnav .nav-links {
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
   gap: 0.25rem;
   list-style: none;
-  flex: 1;
 }
 
 .topnav .nav-link {
@@ -91,39 +102,27 @@ h1, h2, h3, h4, h5, h6 {
 .topnav .nav-link:hover { color: var(--text); background: var(--bg-card); text-decoration: none; }
 .topnav .nav-link.active { color: var(--text); background: var(--accent); }
 
-.topnav .ext-links {
-  display: flex;
-  gap: 0.75rem;
-  list-style: none;
-}
-
-.topnav .ext-links a { color: var(--text-muted); }
-.topnav .ext-links a:hover { color: var(--text); text-decoration: none; }
-
 /* ---- App container --------------------------------------- */
 #app {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: 1fr;
   overflow: hidden;
   min-height: 0;
 }
 
 /* ---- Page layout (TOC + content) ------------------------- */
 .page-layout {
-  display: flex;
-  flex: 1;
+  display: grid;
+  grid-template-columns: var(--toc-w) 1fr;
   min-height: 0;
 }
 
 /* ---- Sidebar TOC ----------------------------------------- */
 .toc {
-  width: var(--toc-w);
-  flex-shrink: 0;
   background: var(--bg-surface);
   padding: 1rem 0.75rem;
-  height: 100%;
   overflow-y: auto;
+  min-height: 0;
 }
 
 .toc-search {
@@ -159,11 +158,9 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ---- Main content area ----------------------------------- */
 main {
-  flex: 1;
-  width: 0; /* flex child trick: keeps scrollbar at viewport right edge */
-  min-width: 0;
   overflow-y: auto;
   padding: 1.5rem 2rem;
+  min-height: 0;
 }
 
 .main-inner {
@@ -197,6 +194,7 @@ main {
 }
 
 .score-table thead th:last-child { text-align: right; }
+
 .score-table tbody tr {
   border-bottom: 1px solid rgba(42,42,74,0.5);
   transition: background 0.1s;
@@ -226,7 +224,8 @@ main {
 .player-cell { white-space: nowrap; }
 
 .player-link {
-  display: inline-flex;
+  display: inline-grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
   vertical-align: middle;
   gap: 0.5rem;
@@ -243,10 +242,9 @@ main {
 }
 
 /* ---- Player profile -------------------------------------- */
-.player-profile {}
-
 .player-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
   gap: 1.5rem;
   margin-bottom: 1.8rem;
@@ -255,11 +253,12 @@ main {
 .body-img {
   width: 100px;
   image-rendering: pixelated;
-  flex-shrink: 0;
 }
 
 .medals {
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
   gap: 0.75rem;
 }
 
@@ -271,10 +270,8 @@ main {
 
 /* ---- Loading & error ------------------------------------- */
 .loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   gap: 1rem;
   padding: 4rem;
   color: var(--text-muted);
@@ -303,7 +300,6 @@ main {
 
 /* ---- Footer ---------------------------------------------- */
 footer {
-  flex-shrink: 0;
   text-align: center;
   padding: 0.6rem 1rem;
   color: var(--text-muted);
@@ -316,40 +312,30 @@ footer {
 ::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 6px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
-/* ---- Responsive ------------------------------------------ */
-@media (max-width: 700px) {
-  .toc { display: none; }
-  .main-inner { padding: 1rem; }
-  :root { --toc-w: 0px; }
-}
-
-@media (max-width: 480px) {
-  .topnav .ext-links { display: none; }
-  .topnav .nav-links { gap: 0; }
-  .topnav .nav-link { padding: 0.35rem 0.5rem; }
-}
-
 /* ---- Topnav right cluster -------------------------------- */
 .topnav-right {
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
   align-items: center;
   gap: 1rem;
-  margin-left: auto;
 }
 
 /* ---- Ext links ------------------------------------------- */
 .ext-links {
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
   gap: 0.75rem;
   list-style: none;
 }
 
 .ext-links a { color: var(--text-muted); }
 .ext-links a:hover { color: var(--text); text-decoration: none; }
+
 /* ---- TOC spinner ----------------------------------------- */
 .toc-spinner {
-  display: flex;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   padding: 1rem 0;
   list-style: none;
 }
@@ -358,4 +344,72 @@ footer {
   width: 20px;
   height: 20px;
   border-width: 2px;
+}
+
+/* ---- Player grid ----------------------------------------- */
+.player-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 96px);
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+/* Each card is just the head image. The name appears as a tooltip on hover. */
+.player-card {
+  position: relative;
+  display: block;
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius);
+  text-decoration: none;
+}
+
+.player-card-head {
+  width: 96px;
+  height: 96px;
+  image-rendering: pixelated;
+  border-radius: var(--radius);
+  display: block;
+  transition: transform 0.1s;
+}
+
+.player-card:hover .player-card-head {
+  transform: scale(1.1);
+}
+
+.player-card-name {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  padding: 0.2rem 0.45rem;
+  border-radius: var(--radius);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 10;
+}
+
+.player-card:hover .player-card-name {
+  opacity: 1;
+}
+
+/* ---- Responsive ------------------------------------------ */
+@media (max-width: 700px) {
+  .page-layout {
+    grid-template-columns: 1fr;
+  }
+  .toc { display: none; }
+}
+
+@media (max-width: 480px) {
+  .topnav .ext-links { display: none; }
+  .topnav {
+    grid-template-columns: auto 1fr;
+  }
 }

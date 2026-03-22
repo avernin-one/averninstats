@@ -1,82 +1,369 @@
 package stats
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
+	"strings"
 
 	"github.com/avernin-one/averninstats/pkg/cache"
+	"github.com/avernin-one/averninstats/pkg/config"
 	"github.com/rs/zerolog/log"
 )
 
-// IndexEntry is written as _index.json in each category directory.
-type IndexEntry struct {
-	Title string `json:"title"`
+// --- Types -------------------------------------------------------------------
+
+// ScoreList maps a score value to the players that achieved it.
+type ScoreList map[int][]string
+
+// ActionScores maps an action (mined, crafted, …) to its score list.
+type ActionScores map[string]ScoreList
+
+// StatScores maps a stat name (stone, creeper, …) to its per-action scores.
+type StatScores map[string]ActionScores
+
+// PlayerScores holds a player's personal top-N scores per category.
+// Structure: category → action → score → []statName
+type PlayerScores map[string]map[string]ScoreList
+
+// Medals counts first, second, and third place highscore positions.
+type Medals struct {
+	Gold   int `json:"gold"`
+	Silver int `json:"silver"`
+	Bronze int `json:"bronze"`
 }
 
-var categories = []string{
-	cache.TypeHighscore,
-	cache.TypeBlock,
-	cache.TypeItem,
-	cache.TypeEntity,
-	cache.TypePlayer,
+// Player is the JSON output for a single player file.
+type Player struct {
+	Name   string         `json:"name"`
+	UUID   string         `json:"uuid"`
+	Medals Medals         `json:"medals"`
+	Stats  map[string]int `json:"stats"`  // minecraft:custom values
+	Scores PlayerScores   `json:"scores"` // personal top-N
 }
 
-// WriteIndexFiles creates one _index.json per category and optionally clears
-// the category directory first (controlled by cfg.NoDelete).
-func (p *Processor) WriteIndexFiles() error {
-	for _, category := range categories {
-		dir := filepath.Join(p.cfg.OutputDir, category)
+// HighscoreEntry is written per minecraft:custom stat.
+type HighscoreEntry struct {
+	Name   string    `json:"name"`
+	Scores ScoreList `json:"scores"`
+}
 
-		if !p.cfg.NoDelete {
-			log.Info().Str("dir", dir).Msg("removing category directory")
-			if err := os.RemoveAll(dir); err != nil {
-				return fmt.Errorf("remove %q: %w", dir, err)
-			}
-		}
+// StatEntry is written per block/item/entity stat.
+type StatEntry struct {
+	Name   string       `json:"name"`
+	Type   string       `json:"type"`
+	Scores ActionScores `json:"scores"`
+}
 
-		if err := saveJSON(filepath.Join(dir, "_index.json"), IndexEntry{Title: category}); err != nil {
-			return fmt.Errorf("write index for %q: %w", category, err)
-		}
+// --- Processor ---------------------------------------------------------------
+
+// Processor aggregates per-player stats files into global highscores and
+// per-stat score lists. UUIDs are stored internally during ProcessFile and
+// replaced with real names in WritePlayerFiles.
+type Processor struct {
+	cfg        *config.Config
+	lookup     *cache.Lookup
+	highscores map[string]ScoreList
+	scores     struct {
+		Block  StatScores
+		Item   StatScores
+		Entity StatScores
 	}
+	players []*Player
+	// rankedUUIDs tracks which UUIDs appear in any score list, enabling O(1)
+	// playerIsRanked checks without re-traversing all score maps.
+	rankedUUIDs map[string]struct{}
+}
+
+func New(cfg *config.Config, l *cache.Lookup) *Processor {
+	p := &Processor{
+		cfg:         cfg,
+		lookup:      l,
+		highscores:  make(map[string]ScoreList),
+		rankedUUIDs: make(map[string]struct{}),
+	}
+	p.scores.Block = make(StatScores)
+	p.scores.Item = make(StatScores)
+	p.scores.Entity = make(StatScores)
+	return p
+}
+
+// ProcessFile reads one player stats JSON file and integrates it into the
+// aggregates. uuid is the filename without its .json extension.
+func (p *Processor) ProcessFile(filePath, uuid string) error {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("read %q: %w", filePath, err)
+	}
+
+	var root struct {
+		Stats map[string]map[string]int `json:"stats"`
+	}
+	if err := json.Unmarshal(data, &root); err != nil {
+		return fmt.Errorf("decode %q: %w", filePath, err)
+	}
+
+	p.processPlayer(root.Stats, uuid)
 	return nil
 }
 
-// replaceUUIDWithName replaces all occurrences of uuid with name in every
-// score list across highscores and block/item/entity scores. This is necessary
-// because scores are aggregated during ProcessFile when the player name is not
-// yet known — the UUID is used as a placeholder and swapped out here.
-func (p *Processor) replaceUUIDWithName(uuid, name string) {
-	replaceInScoreList := func(list ScoreList) {
-		for score, players := range list {
-			for i, v := range players {
-				if v == uuid {
+// Flush resolves UUIDs to player names using the provided cache, writes all
+// player JSON files, and then writes all global stat/highscore files.
+// The player cache is the only source of truth for player names.
+func (p *Processor) Flush(pc *cache.PlayerCache) error {
+	// Build uuid→name map in one pass. This replaces the O(P×S×A×N)
+	// replaceUUIDWithName approach with a single O(P) resolution step.
+	uuidToName := make(map[string]string, len(p.players))
+	for _, player := range p.players {
+		cp, err := pc.GetOrFetch(player.UUID)
+		if err != nil {
+			log.Warn().Err(err).Str("uuid", player.UUID).Msg("failed to resolve player, skipping")
+			continue
+		}
+		uuidToName[player.UUID] = cp.Name
+		player.Name = cp.Name
+	}
+
+	// Resolve UUIDs → names in all score maps in a single O(total entries) pass.
+	p.resolveNames(uuidToName)
+
+	// Now write player files (medals depend on resolved names in highscores).
+	for _, player := range p.players {
+		if player.Name == "" {
+			continue // resolution failed above
+		}
+		p.setMedals(player)
+
+		if !p.meetsPlaytimeRequirement(player) {
+			log.Warn().Str("name", player.Name).Msg("player below minimum playtime, skipping")
+			continue
+		}
+
+		path := filepath.Join(p.cfg.OutputDir, cache.TypePlayer,
+			fmt.Sprintf("%s.json", player.Name))
+		if err := saveJSON(path, player); err != nil {
+			log.Warn().Err(err).Str("player", player.Name).Msg("failed to write player file")
+		}
+
+		cp, err := pc.GetByUUID(player.UUID)
+		if err == nil {
+			pc.EnsureSkin(cp)
+		}
+	}
+
+	// Write global stat files.
+	for name, scores := range p.highscores {
+		path := filepath.Join(p.cfg.OutputDir, cache.TypeHighscore,
+			fmt.Sprintf("%s.json", name))
+		if err := saveJSON(path, HighscoreEntry{Name: name, Scores: scores}); err != nil {
+			log.Warn().Err(err).Str("stat", name).Msg("failed to write highscore file")
+		}
+	}
+
+	for _, group := range []struct {
+		typ  string
+		data StatScores
+	}{
+		{cache.TypeBlock, p.scores.Block},
+		{cache.TypeItem, p.scores.Item},
+		{cache.TypeEntity, p.scores.Entity},
+	} {
+		for name, actionScores := range group.data {
+			path := filepath.Join(p.cfg.OutputDir, group.typ,
+				fmt.Sprintf("%s.json", name))
+			if err := saveJSON(path, StatEntry{Name: name, Type: group.typ, Scores: actionScores}); err != nil {
+				log.Warn().Err(err).Str("type", group.typ).Str("stat", name).Msg("failed to write stat file")
+			}
+		}
+	}
+
+	return nil
+}
+
+// --- Internal processing -----------------------------------------------------
+
+func (p *Processor) processPlayer(raw map[string]map[string]int, uuid string) {
+	player := &Player{
+		UUID: uuid,
+		Scores: PlayerScores{
+			cache.TypeBlock:  make(map[string]ScoreList),
+			cache.TypeItem:   make(map[string]ScoreList),
+			cache.TypeEntity: make(map[string]ScoreList),
+		},
+	}
+
+	for fullAction, entries := range raw {
+		action := trimNamespace(fullAction)
+
+		if action == cache.TypeCustom {
+			p.processCustom(entries, player)
+			continue
+		}
+		for fullStat, count := range entries {
+			p.processStatEntry(player, action, trimNamespace(fullStat), count)
+		}
+	}
+
+	p.players = append(p.players, player)
+}
+
+func (p *Processor) processCustom(entries map[string]int, player *Player) {
+	player.Stats = make(map[string]int, len(entries))
+
+	for fullStat, count := range entries {
+		stat := trimNamespace(fullStat)
+		player.Stats[stat] = count
+
+		if p.highscores[stat] == nil {
+			p.highscores[stat] = make(ScoreList)
+		}
+		p.highscores[stat][count] = append(p.highscores[stat][count], player.UUID)
+		trimScoreList(p.highscores[stat], p.cfg.NumHighscores)
+	}
+}
+
+func (p *Processor) processStatEntry(player *Player, action, stat string, count int) {
+	type target struct {
+		contains func(string) bool
+		scores   *StatScores
+		category string
+	}
+
+	// O(1) set lookups replace the previous O(L) slices.Contains calls.
+	targets := []target{
+		{p.lookup.ContainsBlock, &p.scores.Block, cache.TypeBlock},
+		{p.lookup.ContainsItem, &p.scores.Item, cache.TypeItem},
+		{p.lookup.ContainsEntity, &p.scores.Entity, cache.TypeEntity},
+	}
+
+	for _, t := range targets {
+		if t.category == cache.TypeItem && action == "killed" {
+			continue
+		}
+		if !t.contains(stat) {
+			continue
+		}
+
+		// Global scores
+		if (*t.scores)[stat] == nil {
+			(*t.scores)[stat] = make(ActionScores)
+		}
+		if (*t.scores)[stat][action] == nil {
+			(*t.scores)[stat][action] = make(ScoreList)
+		}
+		(*t.scores)[stat][action][count] = append((*t.scores)[stat][action][count], player.UUID)
+		trimScoreList((*t.scores)[stat][action], p.cfg.NumHighscores)
+
+		// Player personal top-N
+		playerCat := player.Scores[t.category]
+		if playerCat[action] == nil {
+			playerCat[action] = make(ScoreList)
+		}
+		playerCat[action][count] = append(playerCat[action][count], stat)
+		trimScoreList(playerCat[action], p.cfg.NumPlayerHighscores)
+
+		// Track that this UUID appears in at least one ranking.
+		p.rankedUUIDs[player.UUID] = struct{}{}
+	}
+}
+
+// resolveNames replaces all UUID placeholders with real names in a single
+// O(total score entries) pass — instead of O(P × total entries).
+func (p *Processor) resolveNames(uuidToName map[string]string) {
+	replace := func(list ScoreList) {
+		for score, entries := range list {
+			for i, v := range entries {
+				if name, ok := uuidToName[v]; ok {
 					list[score][i] = name
 				}
 			}
 		}
 	}
 
-	for _, scoreList := range p.highscores {
-		replaceInScoreList(scoreList)
+	for _, sl := range p.highscores {
+		replace(sl)
 	}
-
 	for _, statScores := range []StatScores{p.scores.Block, p.scores.Item, p.scores.Entity} {
 		for _, actionScores := range statScores {
-			for _, scoreList := range actionScores {
-				replaceInScoreList(scoreList)
+			for _, sl := range actionScores {
+				replace(sl)
 			}
 		}
 	}
 }
 
-// (highest score first).
-func sortedKeys(list ScoreList) []int {
-	keys := make([]int, 0, len(list))
-	for k := range list {
-		keys = append(keys, k)
+// setMedals counts top-1/2/3 positions in the global highscores for player.
+func (p *Processor) setMedals(player *Player) {
+	player.Medals = Medals{}
+	for _, scoreList := range p.highscores {
+		for rank, key := range sortedKeys(scoreList) {
+			if rank >= 3 {
+				break // only gold/silver/bronze
+			}
+			for _, name := range scoreList[key] {
+				if name != player.Name {
+					continue
+				}
+				switch rank {
+				case 0:
+					player.Medals.Gold++
+				case 1:
+					player.Medals.Silver++
+				case 2:
+					player.Medals.Bronze++
+				}
+			}
+		}
 	}
-	sort.Slice(keys, func(i, j int) bool { return keys[i] > keys[j] })
-	return keys
+}
+
+// meetsPlaytimeRequirement returns true if the player has enough playtime,
+// or already appears in any score ranking.
+func (p *Processor) meetsPlaytimeRequirement(player *Player) bool {
+	// O(1): rankedUUIDs was populated during processStatEntry.
+	if _, ranked := p.rankedUUIDs[player.UUID]; ranked {
+		return true
+	}
+	// Check highscores — player.Name is already resolved here.
+	for _, sl := range p.highscores {
+		for _, names := range sl {
+			for _, name := range names {
+				if name == player.Name {
+					return true
+				}
+			}
+		}
+	}
+
+	ticks, ok := player.Stats["play_time"]
+	if !ok {
+		return false
+	}
+	return ticks/20/60 >= p.cfg.MinPlayTime
+}
+
+// --- Helpers -----------------------------------------------------------------
+
+func trimNamespace(key string) string {
+	if i := strings.IndexByte(key, ':'); i >= 0 {
+		return key[i+1:]
+	}
+	log.Warn().Str("key", key).Msg("stats key missing namespace separator")
+	return key
+}
+
+func saveJSON(path string, v any) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o775); err != nil {
+		return fmt.Errorf("create dir: %w", err)
+	}
+	data, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encode JSON: %w", err)
+	}
+	if err := os.WriteFile(path, data, 0o664); err != nil {
+		return fmt.Errorf("write file: %w", err)
+	}
+	log.Debug().Str("path", path).Msg("saved")
+	return nil
 }

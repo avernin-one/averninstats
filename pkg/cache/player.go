@@ -14,33 +14,31 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// CachedPlayer holds the resolved name, skin metadata, and cache freshness
-// information for a single Minecraft player UUID.
+// CachedPlayer holds the resolved name, skin metadata, and freshness info
+// for a single Minecraft player UUID.
 type CachedPlayer struct {
 	Name      string      `json:"name"`
 	UUID      string      `json:"uuid"`
 	LastCheck time.Time   `json:"last_check"`
 	SkinURL   string      `json:"skin_url"`
 	SkinModel string      `json:"model"`
-	Skin      image.Image `json:"-"` // in-memory only, not persisted
+	Skin      image.Image `json:"-"` // in-memory only
 }
 
-// PlayerCache manages the on-disk list of resolved players.
+// PlayerCache manages the persisted list of resolved players.
 type PlayerCache struct {
 	Players []*CachedPlayer `json:"players"`
 
+	cfg      *config.Config
 	filePath string
 }
 
-var (
-	cfg = config.Get()
-)
-
-// NewPlayerCache loads the player cache from disk. If the file does not exist
-// an empty cache is returned without error.
-func NewPlayerCache() *PlayerCache {
+// NewPlayerCache loads the player cache from disk. Returns an empty cache
+// (without error) if the file does not exist yet.
+func NewPlayerCache(cfg *config.Config) *PlayerCache {
 	pc := &PlayerCache{
-		filePath: filepath.Join(cfg.CacheDir, "playercache.json"),
+		cfg:      cfg,
+		filePath: cfg.PlayerCachePath(),
 	}
 
 	data, err := os.ReadFile(pc.filePath)
@@ -51,39 +49,36 @@ func NewPlayerCache() *PlayerCache {
 
 	if err := json.Unmarshal(data, pc); err != nil {
 		log.Error().Err(err).Msg("failed to decode player cache, starting empty")
-		return &PlayerCache{filePath: pc.filePath}
+		return &PlayerCache{cfg: cfg, filePath: pc.filePath}
 	}
 
 	log.Info().Str("path", pc.filePath).Int("players", len(pc.Players)).Msg("player cache loaded")
 	return pc
 }
 
-// SaveToFile persists the current cache to disk.
+// SaveToFile persists the cache to disk.
 func (pc *PlayerCache) SaveToFile() error {
 	if err := os.MkdirAll(filepath.Dir(pc.filePath), 0o775); err != nil {
 		return fmt.Errorf("create cache dir: %w", err)
 	}
-
 	data, err := json.MarshalIndent(pc, "", "  ")
 	if err != nil {
 		return fmt.Errorf("encode player cache: %w", err)
 	}
-
 	if err := os.WriteFile(pc.filePath, data, 0o664); err != nil {
 		return fmt.Errorf("write player cache: %w", err)
 	}
-
 	log.Info().Str("path", pc.filePath).Int("players", len(pc.Players)).Msg("player cache saved")
 	return nil
 }
 
-// GetOrFetch returns the cached entry for uuid. If the entry is missing,
-// expired, or has incomplete skin data it is refreshed from the Mojang API.
+// GetOrFetch returns the cached entry for uuid, fetching from the Mojang API
+// if the entry is missing, expired, or has incomplete skin data.
 func (pc *PlayerCache) GetOrFetch(uuid string) (*CachedPlayer, error) {
 	p := pc.findByUUID(uuid)
 
 	if p == nil {
-		fetched, err := fetchFromAPI(uuid)
+		fetched, err := pc.fetchFromAPI(uuid)
 		if err != nil {
 			return nil, err
 		}
@@ -92,9 +87,8 @@ func (pc *PlayerCache) GetOrFetch(uuid string) (*CachedPlayer, error) {
 		return fetched, nil
 	}
 
-	if isExpired(p) || p.SkinURL == "" || p.SkinModel == "" {
-		if err := refresh(p); err != nil {
-			// Non-fatal: return stale entry so processing can continue.
+	if pc.isExpired(p) || p.SkinURL == "" || p.SkinModel == "" {
+		if err := pc.refresh(p); err != nil {
 			log.Warn().Err(err).Str("name", p.Name).Msg("failed to refresh player, using stale data")
 		}
 	}
@@ -102,8 +96,8 @@ func (pc *PlayerCache) GetOrFetch(uuid string) (*CachedPlayer, error) {
 	return p, nil
 }
 
-// GetByUUID returns a player already in the cache without any network
-// requests. Returns an error if the UUID is not found.
+// GetByUUID returns a cached player without any network requests.
+// Returns an error if the UUID is not found.
 func (pc *PlayerCache) GetByUUID(uuid string) (*CachedPlayer, error) {
 	if p := pc.findByUUID(uuid); p != nil {
 		return p, nil
@@ -111,23 +105,19 @@ func (pc *PlayerCache) GetByUUID(uuid string) (*CachedPlayer, error) {
 	return nil, fmt.Errorf("player %q not found in cache", uuid)
 }
 
-// EnsureSkin loads the skin image into memory if it is not already set,
-// then saves head and body renders to disk if they are missing or expired.
-func (pc *PlayerCache) EnsureSkin(p *CachedPlayer, outputDir string) {
+// EnsureSkin downloads the skin image if not already in memory, then renders
+// and saves head/body images to disk if they are missing or expired.
+func (pc *PlayerCache) EnsureSkin(p *CachedPlayer) {
 	if p.Skin == nil {
 		p.Skin = player.GetSkin(p.SkinURL)
 	}
-
-	if isExpired(p) || !player.HeadExists(outputDir, p.Name) {
-		player.SaveHead(p.Skin, outputDir, p.Name, p.SkinModel)
+	if pc.isExpired(p) || !player.HeadExists(pc.cfg.OutputDir, p.Name) {
+		player.SaveHead(p.Skin, pc.cfg.OutputDir, p.Name, p.SkinModel)
 	}
-
-	if isExpired(p) || !player.BodyExists(outputDir, p.Name) {
-		player.SaveBody(p.Skin, outputDir, p.Name, p.SkinModel)
+	if pc.isExpired(p) || !player.BodyExists(pc.cfg.OutputDir, p.Name) {
+		player.SaveBody(p.Skin, pc.cfg.OutputDir, p.Name, p.SkinModel)
 	}
 }
-
-// --- Internal ----------------------------------------------------------------
 
 func (pc *PlayerCache) findByUUID(uuid string) *CachedPlayer {
 	for _, p := range pc.Players {
@@ -138,8 +128,8 @@ func (pc *PlayerCache) findByUUID(uuid string) *CachedPlayer {
 	return nil
 }
 
-func isExpired(p *CachedPlayer) bool {
-	maxAge := time.Duration(cfg.CacheMaxAge) * time.Hour
+func (pc *PlayerCache) isExpired(p *CachedPlayer) bool {
+	maxAge := time.Duration(pc.cfg.CacheMaxAge) * time.Hour
 	if time.Since(p.LastCheck) > maxAge {
 		log.Warn().
 			Str("name", p.Name).
@@ -151,32 +141,34 @@ func isExpired(p *CachedPlayer) bool {
 	return false
 }
 
-func fetchFromAPI(uuid string) (*CachedPlayer, error) {
-	data, err := player.Fetch(uuid)
+func (pc *PlayerCache) fetchFromAPI(uuid string) (*CachedPlayer, error) {
+	data, err := player.Fetch(uuid, pc.cfg.QueryDelay)
 	if err != nil {
-		return nil, fmt.Errorf("fetch player %q from Mojang: %w", uuid, err)
+		return nil, fmt.Errorf("fetch player %q: %w", uuid, err)
 	}
-
 	return &CachedPlayer{
 		Name:      data.Name,
 		UUID:      uuid,
-		LastCheck: utils.AddRandomTime(time.Now(), cfg.LastCheckJitter),
+		LastCheck: utils.AddRandomTime(time.Now(), pc.cfg.LastCheckJitter),
 		SkinURL:   data.SkinURL,
 		SkinModel: data.SkinModel,
 	}, nil
 }
 
-func refresh(p *CachedPlayer) error {
-	data, err := player.Fetch(p.UUID)
+func (pc *PlayerCache) refresh(p *CachedPlayer) error {
+	data, err := player.Fetch(p.UUID, pc.cfg.QueryDelay)
 	if err != nil {
 		return err
 	}
-
 	p.Name = data.Name
 	p.SkinURL = data.SkinURL
 	p.SkinModel = data.SkinModel
-	p.LastCheck = utils.AddRandomTime(time.Now(), cfg.LastCheckJitter)
-
+	p.LastCheck = utils.AddRandomTime(time.Now(), pc.cfg.LastCheckJitter)
 	log.Info().Str("name", p.Name).Msg("player cache entry refreshed")
 	return nil
+}
+
+// dirOf returns the directory part of a file path.
+func dirOf(path string) string {
+	return filepath.Dir(path)
 }

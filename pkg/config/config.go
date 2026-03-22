@@ -20,20 +20,20 @@ type Config struct {
 	Version bool
 	Config  string
 
-	// LOGGING
+	// Logging
 	LogDebug   bool `yaml:"logDebug"`
 	LogJson    bool `yaml:"logJson"`
 	LogNoColor bool `yaml:"logNoColor"`
 
-	// FOLDERS
+	// Folders
 	OutputDir      string `yaml:"outputDir"`
 	CacheDir       string `yaml:"cacheDir"`
 	StatsSourceDir string `yaml:"statsSourceDir"`
 
-	// MINECRAFT
-	MinecraftVersion string
+	// Minecraft
+	MinecraftVersion string `yaml:"minecraftVersion"`
 
-	// STATS
+	// Stats
 	NumHighscores       int  `yaml:"numHighscores"`
 	NumPlayerHighscores int  `yaml:"numPlayerHighscores"`
 	MinPlayTime         int  `yaml:"minPlayTime"`
@@ -43,149 +43,143 @@ type Config struct {
 	NoDelete            bool `yaml:"noDelete"`
 }
 
-const (
-	i18nDir = "i18n"
-)
+const i18nDir = "i18n"
 
 var (
-	cfg *Config
-
+	instance  *Config
 	version   string
 	gitCommit string
 	buildDate string
 )
 
+// Get returns the singleton Config. Panics if Init has not been called yet.
+// This is intentional: callers that need config must call Init first (in main).
+// Package-level vars in other packages must NOT call Get() at init time.
 func Get() *Config {
-	if cfg == nil {
-		Init()
+	if instance == nil {
+		panic("config.Get() called before config.Init() — call Init() in main first")
 	}
-
-	return cfg
+	return instance
 }
 
-func Init() {
-	cfg = &Config{}
+// Init parses flags, env vars, and an optional config file. Must be called
+// exactly once at program startup before any other package uses config.Get().
+func Init() *Config {
+	instance = &Config{}
 
-	//	LOGGER
 	cw := zerolog.ConsoleWriter{
 		Out:         os.Stdout,
 		TimeFormat:  time.RFC3339,
 		FieldsOrder: []string{"timestamp", "level", "step", "error", "*"},
 	}
-
 	log.Logger = zerolog.New(&cw).With().Caller().Timestamp().Logger()
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
-	//	PFLAGS
 	pflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)
 
-	pflag.BoolVar(&cfg.Help, "help", false, "Print this help message and exit")
-	pflag.BoolVar(&cfg.Version, "version", false, "Print version information and exit")
-	pflag.StringVar(&cfg.Config, "config", "", "Path to the configuration YAML file")
+	pflag.BoolVar(&instance.Help, "help", false, "Print this help message and exit")
+	pflag.BoolVar(&instance.Version, "version", false, "Print version information and exit")
+	pflag.StringVar(&instance.Config, "config", "", "Path to a YAML config file")
 
-	// FOLDERS
-	pflag.StringVar(&cfg.OutputDir, "output-dir", "./output", "Directory where output files will be saved")
-	pflag.StringVar(&cfg.CacheDir, "cache-dir", "./cache", "Directory where cache files will be saved")
-	pflag.StringVar(&cfg.StatsSourceDir, "stats-source-dir", "./stats", "Directory containing Minecraft per-player stats JSON files")
+	pflag.StringVar(&instance.OutputDir, "output-dir", "./output", "Directory for output files")
+	pflag.StringVar(&instance.CacheDir, "cache-dir", "./cache", "Directory for cache files")
+	pflag.StringVar(&instance.StatsSourceDir, "stats-source-dir", "./stats", "Directory with per-player stats JSON files")
 
-	// LOGGING
-	pflag.BoolVar(&cfg.LogDebug, "log-debug", false, "Enable verbose debug logging")
-	pflag.BoolVar(&cfg.LogJson, "log-json", false, "Enable json logging output formt")
-	pflag.BoolVar(&cfg.LogNoColor, "log-no-color", false, "Disable text colors for logging")
+	pflag.BoolVar(&instance.LogDebug, "log-debug", false, "Enable debug logging")
+	pflag.BoolVar(&instance.LogJson, "log-json", false, "Enable JSON log format")
+	pflag.BoolVar(&instance.LogNoColor, "log-no-color", false, "Disable log colors")
 
-	// MINECRAFT
-	pflag.StringVar(&cfg.MinecraftVersion, "minecraft-version", "1.21.11", "Minecraft version to target for stats processing")
+	pflag.StringVar(&instance.MinecraftVersion, "minecraft-version", "1.21.1", "Target Minecraft version")
 
-	// STATS
-	pflag.IntVar(&cfg.NumHighscores, "num-highscores", 10, "Number of top global highscores to track for each statistic")
-	pflag.IntVar(&cfg.NumPlayerHighscores, "num-player-highscores", 5, "Number of top personal highscores to track for each player and statistic")
-	pflag.IntVar(&cfg.MinPlayTime, "min-play-time", 10, "Minimum play time in minutes for a player to be included in the stats")
-	pflag.IntVar(&cfg.CacheMaxAge, "cache-max-age", 336, "Maximum age in hours for cached player data before it's renewed")
-	pflag.IntVar(&cfg.LastCheckJitter, "last-check-jitter", 96, "Maximum random jitter in hours to add to player last check time to avoid cache stampedes")
-	pflag.IntVar(&cfg.QueryDelay, "query-delay", 2, "Number of seconds to wait between Mojang API queries to avoid rate limits (should not be <2)")
-	pflag.BoolVar(&cfg.NoDelete, "no-delete", false, "Don't delete any existing output files, only add new ones or update existing ones")
+	pflag.IntVar(&instance.NumHighscores, "num-highscores", 10, "Global highscore list size per stat")
+	pflag.IntVar(&instance.NumPlayerHighscores, "num-player-highscores", 5, "Per-player top-N scores per category")
+	pflag.IntVar(&instance.MinPlayTime, "min-play-time", 10, "Minimum playtime in minutes to include a player")
+	pflag.IntVar(&instance.CacheMaxAge, "cache-max-age", 336, "Max cache age in hours before renewal")
+	pflag.IntVar(&instance.LastCheckJitter, "last-check-jitter", 96, "Random jitter in hours added to cache expiry")
+	pflag.IntVar(&instance.QueryDelay, "query-delay", 2, "Seconds between Mojang API requests (min 2)")
+	pflag.BoolVar(&instance.NoDelete, "no-delete", false, "Keep existing output files instead of clearing them")
 
 	pflag.Parse()
 
-	// PARSE ENV VARS
-	options := env.Options{
+	if err := env.ParseWithOptions(instance, env.Options{
 		Prefix:                "BUKI_",
 		UseFieldNameByDefault: true,
-	}
-
-	err := env.ParseWithOptions(cfg, options)
-	if err != nil {
+	}); err != nil {
 		log.Error().Err(err).Msg("failed to parse env vars")
 	}
 
-	if cfg.Help {
+	if instance.Help {
 		fmt.Printf("Usage of %s:\n", os.Args[0])
 		pflag.PrintDefaults()
-		os.Exit(2)
-	}
-
-	if cfg.Version {
-		fmt.Printf("Version:    %s\nGit Commit: %s\nBuild Date: %s\nGo Version: %s\n",
-			version,
-			gitCommit,
-			buildDate,
-			runtime.Version())
 		os.Exit(0)
 	}
 
-	if cfg.LogDebug {
+	if instance.Version {
+		fmt.Printf("Version:    %s\nGit Commit: %s\nBuild Date: %s\nGo Version: %s\n",
+			version, gitCommit, buildDate, runtime.Version())
+		os.Exit(0)
+	}
+
+	// Apply log settings after flag/env parsing so CLI overrides env.
+	if instance.LogDebug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
-
-	if cfg.LogNoColor {
-		cw.NoColor = cfg.LogNoColor
+	if instance.LogNoColor {
+		cw.NoColor = true
 	}
-
-	if cfg.LogJson {
+	if instance.LogJson {
 		log.Logger = zerolog.New(os.Stdout).With().Caller().Timestamp().Logger()
 	}
 
-	read()
-	validate()
+	readFile(instance)
+	validate(instance)
+
+	return instance
 }
 
-func validate() {
-	if err := os.MkdirAll(filepath.Join(cfg.OutputDir), 0o775); err != nil {
-		log.Fatal().Err(err).Str("output_dir", cfg.OutputDir).Msg("failed to create output directory")
-	} else {
-		log.Info().Str("output_dir", cfg.OutputDir).Msg("output directory present")
-	}
-
-	if err := os.MkdirAll(filepath.Join(cfg.CacheDir), 0o775); err != nil {
-		log.Fatal().Err(err).Str("cache_dir", cfg.CacheDir).Msg("failed to create cache directory")
-	} else {
-		log.Info().Str("cache_dir", cfg.CacheDir).Msg("cache directory present")
-	}
-
-	if err := os.MkdirAll(filepath.Join(cfg.OutputDir, i18nDir), 0o775); err != nil {
-		log.Fatal().Err(err).Msg("failed to create i18n output directory")
-	} else {
-		log.Info().Str("i18n_dir", filepath.Join(cfg.OutputDir, i18nDir)).Msg("i18n output directory present")
-	}
+// I18nDir returns the absolute path to the i18n output directory.
+func (c *Config) I18nDir() string {
+	return filepath.Join(c.OutputDir, i18nDir)
 }
 
-func read() {
-	if cfg.Config == "" {
+// LookupCachePath returns the versioned lookup cache file path.
+func (c *Config) LookupCachePath() string {
+	return filepath.Join(c.CacheDir, c.MinecraftVersion, "lookup.json")
+}
+
+// PlayerCachePath returns the player cache file path.
+func (c *Config) PlayerCachePath() string {
+	return filepath.Join(c.CacheDir, "playercache.json")
+}
+
+func readFile(c *Config) {
+	if c.Config == "" {
 		log.Info().Msg("no config file specified")
 		return
 	}
-
-	data, err := os.ReadFile(filepath.Clean(cfg.Config))
+	data, err := os.ReadFile(filepath.Clean(c.Config))
 	if err != nil {
-		log.Error().Err(err).Msg("error reading config file")
+		log.Error().Err(err).Str("path", c.Config).Msg("error reading config file")
+		return
 	}
-
-	err = yaml.Unmarshal(data, &cfg)
-	if err != nil {
-		log.Fatal().Err(err).Msg("error unmarshalling config file")
+	if err := yaml.Unmarshal(data, c); err != nil {
+		log.Fatal().Err(err).Msg("error parsing config file")
 	}
 }
 
-func (c *Config) I18nDir() string {
-	return filepath.Join(c.OutputDir, i18nDir)
+func validate(c *Config) {
+	dirs := []struct {
+		path string
+		name string
+	}{
+		{c.OutputDir, "output"},
+		{c.CacheDir, "cache"},
+		{c.I18nDir(), "i18n"},
+	}
+	for _, d := range dirs {
+		if err := os.MkdirAll(d.path, 0o775); err != nil {
+			log.Fatal().Err(err).Str("path", d.path).Msgf("failed to create %s directory", d.name)
+		}
+		log.Info().Str("path", d.path).Msgf("%s directory ready", d.name)
+	}
 }

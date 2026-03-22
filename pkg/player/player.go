@@ -11,13 +11,12 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/avernin-one/averninstats/pkg/config"
 	"github.com/avernin-one/averninstats/pkg/utils"
 	skin "github.com/mineatar-io/skin-render"
 	"github.com/rs/zerolog/log"
 )
 
-// Data holds the raw profile response from the Mojang session server.
+// Data holds the resolved profile data for a single Minecraft player.
 type Data struct {
 	ID         string `json:"id"`
 	Name       string `json:"name"`
@@ -29,7 +28,6 @@ type Data struct {
 	SkinModel string `json:"-"`
 }
 
-// playerMetadata is the base64-decoded texture payload inside Properties.
 type playerMetadata struct {
 	Textures struct {
 		Skin struct {
@@ -41,11 +39,9 @@ type playerMetadata struct {
 	} `json:"textures"`
 }
 
-var cfg = config.Get()
-
-// Fetch retrieves profile and skin metadata for the given UUID from Mojang,
-// waits cfg.QueryDelay seconds, and returns the resolved Data.
-func Fetch(uuid string) (Data, error) {
+// Fetch retrieves profile and skin metadata for uuid from the Mojang API.
+// queryDelay is the number of seconds to sleep after the request.
+func Fetch(uuid string, queryDelay int) (Data, error) {
 	url := fmt.Sprintf("https://sessionserver.mojang.com/session/minecraft/profile/%s", uuid)
 
 	body, err := utils.NewHttpRequest(url)
@@ -70,7 +66,7 @@ func Fetch(uuid string) (Data, error) {
 	if encodedTexture != "" {
 		decoded, err := base64.StdEncoding.DecodeString(encodedTexture)
 		if err != nil {
-			log.Warn().Str("uuid", uuid).Err(err).Msg("unable to decode base64 texture string")
+			log.Warn().Str("uuid", uuid).Err(err).Msg("unable to decode base64 texture")
 		} else if err := json.Unmarshal(decoded, &meta); err != nil {
 			log.Warn().Str("uuid", uuid).Err(err).Msg("unable to decode texture metadata")
 		}
@@ -79,22 +75,21 @@ func Fetch(uuid string) (Data, error) {
 	if meta.Textures.Skin.Metadata.Model == "" {
 		meta.Textures.Skin.Metadata.Model = "wide"
 	}
-
 	d.SkinURL = meta.Textures.Skin.URL
 	d.SkinModel = meta.Textures.Skin.Metadata.Model
 
 	log.Info().Str("uuid", uuid).Str("name", d.Name).Msg("resolved UUID")
-	time.Sleep(time.Duration(cfg.QueryDelay) * time.Second)
+	time.Sleep(time.Duration(queryDelay) * time.Second)
 
 	return d, nil
 }
 
 // GetSkin downloads the skin image from url. Falls back to the default skin
-// if the download fails.
+// on failure.
 func GetSkin(url string) image.Image {
 	img, err := downloadImage(url)
 	if err != nil {
-		log.Warn().Str("url", url).Err(err).Msg("unable to download player skin, using default")
+		log.Warn().Str("url", url).Err(err).Msg("unable to download skin, using default")
 		return skin.GetDefaultSkin(true)
 	}
 	return img
@@ -102,67 +97,54 @@ func GetSkin(url string) image.Image {
 
 // SaveHead renders and saves the face/head image for the given skin.
 func SaveHead(img image.Image, outputDir, playerName, playerModel string) {
-	filePath := filepath.Join(outputDir, "assets", "images", "players",
-		fmt.Sprintf("head_%s.png", playerName))
-
+	path := headPath(outputDir, playerName)
 	nrgba, ok := img.(*image.NRGBA)
 	if !ok {
-		log.Warn().Str("player", playerName).Msg("unexpected image type for player head")
+		log.Warn().Str("player", playerName).Msg("unexpected image type for head render")
 		return
 	}
-
-	rendered := skin.RenderFace(nrgba, skin.Options{
-		Scale:   12,
-		Overlay: true,
-		Slim:    playerModel == "slim",
-		Square:  true,
-	})
-
-	if err := saveImage(rendered, filePath); err != nil {
-		log.Warn().Str("player", playerName).Err(err).Msg("unable to save player head image")
+	rendered := skin.RenderFace(nrgba, skin.Options{Scale: 12, Overlay: true, Slim: playerModel == "slim", Square: true})
+	if err := saveImage(rendered, path); err != nil {
+		log.Warn().Str("player", playerName).Err(err).Msg("unable to save head image")
 		return
 	}
-	log.Debug().Str("player", playerName).Str("model", playerModel).Msg("saved player head")
+	log.Debug().Str("player", playerName).Msg("saved player head")
 }
 
 // SaveBody renders and saves the full-body image for the given skin.
 func SaveBody(img image.Image, outputDir, playerName, playerModel string) {
-	filePath := filepath.Join(outputDir, "assets", "images", "players",
-		fmt.Sprintf("body_%s.png", playerName))
-
+	path := bodyPath(outputDir, playerName)
 	nrgba, ok := img.(*image.NRGBA)
 	if !ok {
-		log.Warn().Str("player", playerName).Msg("unexpected image type for player body")
+		log.Warn().Str("player", playerName).Msg("unexpected image type for body render")
 		return
 	}
-
-	rendered := skin.RenderBody(nrgba, skin.Options{
-		Scale:   10,
-		Overlay: true,
-		Slim:    playerModel == "slim",
-		Square:  false,
-	})
-
-	if err := saveImage(rendered, filePath); err != nil {
-		log.Warn().Str("player", playerName).Err(err).Msg("unable to save player body image")
+	rendered := skin.RenderBody(nrgba, skin.Options{Scale: 10, Overlay: true, Slim: playerModel == "slim", Square: false})
+	if err := saveImage(rendered, path); err != nil {
+		log.Warn().Str("player", playerName).Err(err).Msg("unable to save body image")
 		return
 	}
-	log.Debug().Str("player", playerName).Str("model", playerModel).Msg("saved player body")
+	log.Debug().Str("player", playerName).Msg("saved player body")
 }
 
-// HeadExists reports whether the rendered head image for playerName exists.
+// HeadExists reports whether the head image for playerName exists on disk.
 func HeadExists(outputDir, playerName string) bool {
-	return utils.FileExists(filepath.Join(outputDir, "assets", "images", "players",
-		fmt.Sprintf("head_%s.png", playerName)), true)
+	return utils.FileExists(headPath(outputDir, playerName), true)
 }
 
-// BodyExists reports whether the rendered body image for playerName exists.
+// BodyExists reports whether the body image for playerName exists on disk.
 func BodyExists(outputDir, playerName string) bool {
-	return utils.FileExists(filepath.Join(outputDir, "assets", "images", "players",
-		fmt.Sprintf("body_%s.png", playerName)), true)
+	return utils.FileExists(bodyPath(outputDir, playerName), true)
 }
 
-// downloadImage fetches and decodes an image from url.
+func headPath(outputDir, playerName string) string {
+	return filepath.Join(outputDir, "assets", "images", "players", fmt.Sprintf("head_%s.png", playerName))
+}
+
+func bodyPath(outputDir, playerName string) string {
+	return filepath.Join(outputDir, "assets", "images", "players", fmt.Sprintf("body_%s.png", playerName))
+}
+
 func downloadImage(url string) (image.Image, error) {
 	data, err := utils.NewHttpRequest(url)
 	if err != nil {
@@ -175,12 +157,11 @@ func downloadImage(url string) (image.Image, error) {
 	return img, nil
 }
 
-// saveImage encodes img as PNG and writes it to filePath.
-func saveImage(img image.Image, filePath string) error {
-	if err := os.MkdirAll(filepath.Dir(filePath), 0o775); err != nil {
+func saveImage(img image.Image, path string) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o775); err != nil {
 		return fmt.Errorf("create directory: %w", err)
 	}
-	f, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o664)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o664)
 	if err != nil {
 		return fmt.Errorf("create file: %w", err)
 	}

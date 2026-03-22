@@ -138,11 +138,11 @@ func BodyExists(outputDir, playerName string) bool {
 }
 
 func headPath(outputDir, playerName string) string {
-	return filepath.Join(outputDir, "assets", "images", "players", fmt.Sprintf("head_%s.png", playerName))
+	return filepath.Join(outputDir, "assets", "images", "player", fmt.Sprintf("head_%s.png", playerName))
 }
 
 func bodyPath(outputDir, playerName string) string {
-	return filepath.Join(outputDir, "assets", "images", "players", fmt.Sprintf("body_%s.png", playerName))
+	return filepath.Join(outputDir, "assets", "images", "player", fmt.Sprintf("body_%s.png", playerName))
 }
 
 func downloadImage(url string) (image.Image, error) {

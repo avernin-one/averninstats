@@ -244,6 +244,40 @@ export async function renderStatDetail(category, statName) {
 // Players
 // ---------------------------------------------------------------------------
 
+// buildTocWithGridSync works like buildToc but also keeps the player grid
+// in sync with the search filter.
+function buildTocWithGridSync(tocItems, grid) {
+  const list = document.getElementById("toc-list");
+  if (!list) {
+    return;
+  }
+
+  function paint(filter) {
+    const lc = filter ? filter.toLowerCase() : "";
+
+    const filteredToc = lc
+      ? tocItems.filter((item) => item.label.toLowerCase().includes(lc))
+      : tocItems;
+
+    list.innerHTML = Mustache.render(T.get("toc-list"), { items: filteredToc });
+
+    // Show only matching cards in the grid.
+    const visibleNames = new Set(filteredToc.map((item) => item.label));
+    for (const card of grid.querySelectorAll(".player-card")) {
+      const name = card.querySelector(".player-card-name").textContent;
+      card.style.display = visibleNames.has(name) ? "" : "none";
+    }
+  }
+
+  paint("");
+
+  const searchInput = document.getElementById("toc-search");
+  if (searchInput) {
+    searchInput.value = "";
+    searchInput.addEventListener("input", (e) => paint(e.target.value));
+  }
+}
+
 export async function renderPlayerList() {
   setActiveNav("players");
   setTitle("Players");
@@ -260,11 +294,29 @@ export async function renderPlayerList() {
 
   render(Mustache.render(T.get("page-players"), {}));
 
-  const tocItems = manifest.players
+  const players = manifest.players
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
-    .map((name) => ({ label: name, href: `#/player/${name}` }));
+    .map((name) => ({
+      name,
+      headImg: headImgPath(name),
+      href: `#/player/${name}`,
+    }));
 
-  buildToc(tocItems);
+  // Render the player grid into the main area.
+  const grid = document.getElementById("player-grid");
+  for (const player of players) {
+    grid.insertAdjacentHTML(
+      "beforeend",
+      Mustache.render(T.get("player-card"), player),
+    );
+  }
+
+  // Build the TOC. When the search filter changes, also filter the grid.
+  const tocItems = players.map((p) => ({
+    label: p.name,
+    href: `#/player/${p.name}`,
+  }));
+  buildTocWithGridSync(tocItems, grid);
 }
 
 export async function renderPlayerDetail(playerName) {
@@ -304,7 +356,7 @@ export async function renderPlayerDetail(playerName) {
   const scoreCategories = [];
 
   for (const [cat, actionScores] of Object.entries(data.scores ?? {})) {
-    titleCase(cat);
+    const categoryLabel = titleCase(cat);
 
     const actions = flattenActionScores(actionScores, translate)
       .map(({ label, entries }) => ({

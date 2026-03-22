@@ -12,6 +12,7 @@ const TEMPLATE_FILES = [
   "page-stat-list",
   "stat-detail",
   "page-players",
+  "player-card",
   "player-profile",
   "loading",
   "error",

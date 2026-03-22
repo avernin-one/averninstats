@@ -13,6 +13,12 @@ import {
 } from "./utils.js";
 import { translate } from "./i18n.js";
 import * as T from "./templates.js";
+import { alignTables } from "./align-tables.js";
+
+// Waits for the browser to paint before measuring table widths.
+function scheduleAlign(scope) {
+  requestAnimationFrame(() => alignTables(scope));
+}
 
 // ---------------------------------------------------------------------------
 // Page-level helpers
@@ -163,11 +169,8 @@ export async function renderHighscores() {
   }
 
   buildToc(tocItems);
+  scheduleAlign(".main-inner");
 }
-
-// ---------------------------------------------------------------------------
-// Stat list pages (block / item / entity)
-// ---------------------------------------------------------------------------
 
 export async function renderStatList(category) {
   setActiveNav(category);
@@ -237,6 +240,7 @@ export async function renderStatDetail(category, statName) {
     sections,
   });
 
+  scheduleAlign(".main-inner");
   setActiveTocLink(`#/${category}/${statName}`);
 }
 
@@ -385,5 +389,6 @@ export async function renderPlayerDetail(playerName) {
     scoreCategories,
   });
 
+  scheduleAlign(".main-inner");
   setActiveTocLink(`#/player/${playerName}`);
 }

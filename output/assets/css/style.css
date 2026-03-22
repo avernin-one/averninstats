@@ -40,24 +40,15 @@ body {
   scrollbar-color: var(--scrollbar) transparent;
 }
 
-a {
-  color: var(--accent);
-  text-decoration: none;
-}
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-hover); text-decoration: underline; }
 
-a:hover {
-  color: var(--accent-hover);
-  text-decoration: underline;
-}
-
-img {
-  display: block;
-}
+img { display: block; }
 
 /* ---- Headings -------------------------------------------- */
 h1, h2, h3, h4, h5, h6 {
   color: var(--text);
-  margin: .8rem;
+  margin: .8rem 0;
 }
 
 /* ---- Top navigation -------------------------------------- */
@@ -165,6 +156,7 @@ main {
 
 .main-inner {
   max-width: 900px;
+  overflow-x: auto;
 }
 
 /* Offset anchor scrolling so headings don't hide behind the sticky navbar. */
@@ -179,7 +171,6 @@ main {
 
 /* ---- Score tables ---------------------------------------- */
 .score-table {
-  width: 100%;
   border-collapse: collapse;
 }
 
@@ -198,6 +189,10 @@ main {
 .score-table tbody tr {
   border-bottom: 1px solid rgba(42,42,74,0.5);
   transition: background 0.1s;
+}
+
+.score-table tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.15);
 }
 
 .score-table tbody tr:hover { background: var(--bg-card); }

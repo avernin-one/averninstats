@@ -46,26 +46,24 @@ type Config struct {
 const i18nDir = "i18n"
 
 var (
-	instance  *Config
+	cfg       *Config
 	version   string
 	gitCommit string
 	buildDate string
 )
 
-// Get returns the singleton Config. Panics if Init has not been called yet.
-// This is intentional: callers that need config must call Init first (in main).
-// Package-level vars in other packages must NOT call Get() at init time.
+// Get returns the config.
 func Get() *Config {
-	if instance == nil {
-		panic("config.Get() called before config.Init() — call Init() in main first")
+	if cfg == nil {
+		Init()
 	}
-	return instance
+	return cfg
 }
 
 // Init parses flags, env vars, and an optional config file. Must be called
 // exactly once at program startup before any other package uses config.Get().
 func Init() *Config {
-	instance = &Config{}
+	cfg = &Config{}
 
 	cw := zerolog.ConsoleWriter{
 		Out:         os.Stdout,
@@ -77,64 +75,64 @@ func Init() *Config {
 
 	pflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)
 
-	pflag.BoolVar(&instance.Help, "help", false, "Print this help message and exit")
-	pflag.BoolVar(&instance.Version, "version", false, "Print version information and exit")
-	pflag.StringVar(&instance.Config, "config", "", "Path to a YAML config file")
+	pflag.BoolVar(&cfg.Help, "help", false, "Print this help message and exit")
+	pflag.BoolVar(&cfg.Version, "version", false, "Print version information and exit")
+	pflag.StringVar(&cfg.Config, "config", "", "Path to a YAML config file")
 
-	pflag.StringVar(&instance.OutputDir, "output-dir", "./output", "Directory for output files")
-	pflag.StringVar(&instance.CacheDir, "cache-dir", "./cache", "Directory for cache files")
-	pflag.StringVar(&instance.StatsSourceDir, "stats-source-dir", "./stats", "Directory with per-player stats JSON files")
+	pflag.StringVar(&cfg.OutputDir, "output-dir", "./output", "Directory for output files")
+	pflag.StringVar(&cfg.CacheDir, "cache-dir", "./cache", "Directory for cache files")
+	pflag.StringVar(&cfg.StatsSourceDir, "stats-source-dir", "./stats", "Directory with per-player stats JSON files")
 
-	pflag.BoolVar(&instance.LogDebug, "log-debug", false, "Enable debug logging")
-	pflag.BoolVar(&instance.LogJson, "log-json", false, "Enable JSON log format")
-	pflag.BoolVar(&instance.LogNoColor, "log-no-color", false, "Disable log colors")
+	pflag.BoolVar(&cfg.LogDebug, "log-debug", false, "Enable debug logging")
+	pflag.BoolVar(&cfg.LogJson, "log-json", false, "Enable JSON log format")
+	pflag.BoolVar(&cfg.LogNoColor, "log-no-color", false, "Disable log colors")
 
-	pflag.StringVar(&instance.MinecraftVersion, "minecraft-version", "1.21.1", "Target Minecraft version")
+	pflag.StringVar(&cfg.MinecraftVersion, "minecraft-version", "1.21.1", "Target Minecraft version")
 
-	pflag.IntVar(&instance.NumHighscores, "num-highscores", 10, "Global highscore list size per stat")
-	pflag.IntVar(&instance.NumPlayerHighscores, "num-player-highscores", 5, "Per-player top-N scores per category")
-	pflag.IntVar(&instance.MinPlayTime, "min-play-time", 10, "Minimum playtime in minutes to include a player")
-	pflag.IntVar(&instance.CacheMaxAge, "cache-max-age", 336, "Max cache age in hours before renewal")
-	pflag.IntVar(&instance.LastCheckJitter, "last-check-jitter", 96, "Random jitter in hours added to cache expiry")
-	pflag.IntVar(&instance.QueryDelay, "query-delay", 2, "Seconds between Mojang API requests (min 2)")
-	pflag.BoolVar(&instance.NoDelete, "no-delete", false, "Keep existing output files instead of clearing them")
+	pflag.IntVar(&cfg.NumHighscores, "num-highscores", 10, "Global highscore list size per stat")
+	pflag.IntVar(&cfg.NumPlayerHighscores, "num-player-highscores", 5, "Per-player top-N scores per category")
+	pflag.IntVar(&cfg.MinPlayTime, "min-play-time", 10, "Minimum playtime in minutes to include a player")
+	pflag.IntVar(&cfg.CacheMaxAge, "cache-max-age", 336, "Max cache age in hours before renewal")
+	pflag.IntVar(&cfg.LastCheckJitter, "last-check-jitter", 96, "Random jitter in hours added to cache expiry")
+	pflag.IntVar(&cfg.QueryDelay, "query-delay", 2, "Seconds between Mojang API requests (min 2)")
+	pflag.BoolVar(&cfg.NoDelete, "no-delete", false, "Keep existing output files instead of clearing them")
 
 	pflag.Parse()
 
-	if err := env.ParseWithOptions(instance, env.Options{
+	if err := env.ParseWithOptions(cfg, env.Options{
 		Prefix:                "BUKI_",
 		UseFieldNameByDefault: true,
 	}); err != nil {
 		log.Error().Err(err).Msg("failed to parse env vars")
 	}
 
-	if instance.Help {
+	if cfg.Help {
 		fmt.Printf("Usage of %s:\n", os.Args[0])
 		pflag.PrintDefaults()
 		os.Exit(0)
 	}
 
-	if instance.Version {
+	if cfg.Version {
 		fmt.Printf("Version:    %s\nGit Commit: %s\nBuild Date: %s\nGo Version: %s\n",
 			version, gitCommit, buildDate, runtime.Version())
 		os.Exit(0)
 	}
 
 	// Apply log settings after flag/env parsing so CLI overrides env.
-	if instance.LogDebug {
+	if cfg.LogDebug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
-	if instance.LogNoColor {
+	if cfg.LogNoColor {
 		cw.NoColor = true
 	}
-	if instance.LogJson {
+	if cfg.LogJson {
 		log.Logger = zerolog.New(os.Stdout).With().Caller().Timestamp().Logger()
 	}
 
-	readFile(instance)
-	validate(instance)
+	readFile(cfg)
+	validate(cfg)
 
-	return instance
+	return cfg
 }
 
 // I18nDir returns the absolute path to the i18n output directory.

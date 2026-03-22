@@ -72,7 +72,7 @@ func Run(cfg *config.Config) (*cache.Lookup, error) {
 			continue
 		}
 
-		// "minecraft/lang/en_gb.json" → "en-gb"
+		// "minecraft/lang/en_gb.json" -> "en-gb"
 		name := strings.TrimPrefix(key, langPrefix)
 		name = strings.ReplaceAll(name, "_", "-")
 		name = strings.TrimSuffix(name, filepath.Ext(name))
@@ -92,7 +92,7 @@ func Run(cfg *config.Config) (*cache.Lookup, error) {
 	}
 
 	if l.AnyEmpty() {
-		return nil, fmt.Errorf("lookup source language %q not found in asset index — check --minecraft-version", lookupSource)
+		return nil, fmt.Errorf("lookup source language %q not found in asset index, check --minecraft-version", lookupSource)
 	}
 
 	sort.Strings(l.Block)

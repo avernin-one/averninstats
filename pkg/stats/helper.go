@@ -12,19 +12,17 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// --- Types -------------------------------------------------------------------
-
 // ScoreList maps a score value to the players that achieved it.
 type ScoreList map[int][]string
 
-// ActionScores maps an action (mined, crafted, …) to its score list.
+// ActionScores maps an action (mined, crafted, ...) to its score list.
 type ActionScores map[string]ScoreList
 
-// StatScores maps a stat name (stone, creeper, …) to its per-action scores.
+// StatScores maps a stat name (stone, creeper, ...) to its per-action scores.
 type StatScores map[string]ActionScores
 
 // PlayerScores holds a player's personal top-N scores per category.
-// Structure: category → action → score → []statName
+// Structure: category -> action -> score -> []statName
 type PlayerScores map[string]map[string]ScoreList
 
 // Medals counts first, second, and third place highscore positions.
@@ -71,7 +69,7 @@ type Processor struct {
 		Entity StatScores
 	}
 	players []*Player
-	// rankedUUIDs tracks which UUIDs appear in any score list, enabling O(1)
+	// rankedUUIDs tracks which UUIDs appear in any score list, enabling
 	// playerIsRanked checks without re-traversing all score maps.
 	rankedUUIDs map[string]struct{}
 }
@@ -112,8 +110,7 @@ func (p *Processor) ProcessFile(filePath, uuid string) error {
 // player JSON files, and then writes all global stat/highscore files.
 // The player cache is the only source of truth for player names.
 func (p *Processor) Flush(pc *cache.PlayerCache) error {
-	// Build uuid→name map in one pass. This replaces the O(P×S×A×N)
-	// replaceUUIDWithName approach with a single O(P) resolution step.
+	// Build uuid -> name map in one pass.
 	uuidToName := make(map[string]string, len(p.players))
 	for _, player := range p.players {
 		cp, err := pc.GetOrFetch(player.UUID)
@@ -125,7 +122,7 @@ func (p *Processor) Flush(pc *cache.PlayerCache) error {
 		player.Name = cp.Name
 	}
 
-	// Resolve UUIDs → names in all score maps in a single O(total entries) pass.
+	// Resolve UUIDs -> names in all score maps.
 	p.resolveNames(uuidToName)
 
 	// Now write player files (medals depend on resolved names in highscores).
@@ -230,7 +227,7 @@ func (p *Processor) processStatEntry(player *Player, action, stat string, count 
 		category string
 	}
 
-	// O(1) set lookups replace the previous O(L) slices.Contains calls.
+	// Set lookups
 	targets := []target{
 		{p.lookup.ContainsBlock, &p.scores.Block, cache.TypeBlock},
 		{p.lookup.ContainsItem, &p.scores.Item, cache.TypeItem},
@@ -268,8 +265,7 @@ func (p *Processor) processStatEntry(player *Player, action, stat string, count 
 	}
 }
 
-// resolveNames replaces all UUID placeholders with real names in a single
-// O(total score entries) pass — instead of O(P × total entries).
+// resolveNames replaces all UUID placeholders with real names
 func (p *Processor) resolveNames(uuidToName map[string]string) {
 	replace := func(list ScoreList) {
 		for score, entries := range list {
@@ -321,11 +317,10 @@ func (p *Processor) setMedals(player *Player) {
 // meetsPlaytimeRequirement returns true if the player has enough playtime,
 // or already appears in any score ranking.
 func (p *Processor) meetsPlaytimeRequirement(player *Player) bool {
-	// O(1): rankedUUIDs was populated during processStatEntry.
 	if _, ranked := p.rankedUUIDs[player.UUID]; ranked {
 		return true
 	}
-	// Check highscores — player.Name is already resolved here.
+
 	for _, sl := range p.highscores {
 		for _, names := range sl {
 			for _, name := range names {

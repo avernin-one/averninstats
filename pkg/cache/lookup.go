@@ -25,8 +25,6 @@ type Lookup struct {
 	Entity []string `json:"entity"`
 	Custom []string `json:"stats"`
 
-	// blockSet, itemSet, entitySet provide O(1) membership checks.
-	// They are populated lazily on first call to Contains().
 	blockSet  map[string]struct{}
 	itemSet   map[string]struct{}
 	entitySet map[string]struct{}
@@ -74,25 +72,25 @@ func (l *Lookup) AnyEmpty() bool {
 		len(l.Entity) == 0 || len(l.Custom) == 0
 }
 
-// ContainsBlock reports whether stat is a known block key. O(1).
+// ContainsBlock reports whether stat is a known block key.
 func (l *Lookup) ContainsBlock(stat string) bool {
 	_, ok := l.blockSet[stat]
 	return ok
 }
 
-// ContainsItem reports whether stat is a known item key. O(1).
+// ContainsItem reports whether stat is a known item key.
 func (l *Lookup) ContainsItem(stat string) bool {
 	_, ok := l.itemSet[stat]
 	return ok
 }
 
-// ContainsEntity reports whether stat is a known entity key. O(1).
+// ContainsEntity reports whether stat is a known entity key.
 func (l *Lookup) ContainsEntity(stat string) bool {
 	_, ok := l.entitySet[stat]
 	return ok
 }
 
-// buildSets converts the slice-based lists to maps for O(1) lookups.
+// buildSets converts the slice-based lists to maps for lookups.
 func (l *Lookup) buildSets() {
 	l.blockSet = toSet(l.Block)
 	l.itemSet = toSet(l.Item)

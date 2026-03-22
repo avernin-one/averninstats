@@ -1,6 +1,6 @@
 package stats
 
-// manifest.go — writes _manifest.json files for each output category.
+// manifest.go - writes _manifest.json files for each output category.
 // The frontend has no directory listing, so it needs a manifest to know
 // which stat/player JSON files exist.
 

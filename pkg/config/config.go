@@ -87,7 +87,7 @@ func Init() *Config {
 	pflag.BoolVar(&cfg.LogJson, "log-json", false, "Enable JSON log format")
 	pflag.BoolVar(&cfg.LogNoColor, "log-no-color", false, "Disable log colors")
 
-	pflag.StringVar(&cfg.MinecraftVersion, "minecraft-version", "1.21.1", "Target Minecraft version")
+	pflag.StringVar(&cfg.MinecraftVersion, "minecraft-version", "1.21.11", "Target Minecraft version")
 
 	pflag.IntVar(&cfg.NumHighscores, "num-highscores", 10, "Global highscore list size per stat")
 	pflag.IntVar(&cfg.NumPlayerHighscores, "num-player-highscores", 5, "Per-player top-N scores per category")
@@ -152,7 +152,7 @@ func (c *Config) PlayerCachePath() string {
 
 func readFile(c *Config) {
 	if c.Config == "" {
-		log.Info().Msg("no config file specified")
+		log.Warn().Msg("no config file specified")
 		return
 	}
 	data, err := os.ReadFile(filepath.Clean(c.Config))
@@ -174,10 +174,12 @@ func validate(c *Config) {
 		{c.CacheDir, "cache"},
 		{c.I18nDir(), "i18n"},
 	}
+
 	for _, d := range dirs {
 		if err := os.MkdirAll(d.path, 0o775); err != nil {
 			log.Fatal().Err(err).Str("path", d.path).Msgf("failed to create %s directory", d.name)
 		}
-		log.Info().Str("path", d.path).Msgf("%s directory ready", d.name)
+
+		log.Info().Str("path", d.path).Str("name", d.name).Msg("directory ready")
 	}
 }

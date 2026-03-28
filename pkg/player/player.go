@@ -75,6 +75,7 @@ func Fetch(uuid string, queryDelay int) (Data, error) {
 	if meta.Textures.Skin.Metadata.Model == "" {
 		meta.Textures.Skin.Metadata.Model = "wide"
 	}
+
 	d.SkinURL = meta.Textures.Skin.URL
 	d.SkinModel = meta.Textures.Skin.Metadata.Model
 
@@ -92,47 +93,85 @@ func GetSkin(url string) image.Image {
 		log.Warn().Str("url", url).Err(err).Msg("unable to download skin, using default")
 		return skin.GetDefaultSkin(true)
 	}
+
 	return img
 }
 
 // SaveHead renders and saves the face/head image for the given skin.
 func SaveHead(img image.Image, outputDir, playerName, playerModel string) {
 	path := headPath(outputDir, playerName)
+
 	nrgba, ok := img.(*image.NRGBA)
 	if !ok {
 		log.Warn().Str("player", playerName).Msg("unexpected image type for head render")
 		return
 	}
+
 	rendered := skin.RenderFace(nrgba, skin.Options{Scale: 12, Overlay: true, Slim: playerModel == "slim", Square: true})
 	if err := saveImage(rendered, path); err != nil {
 		log.Warn().Str("player", playerName).Err(err).Msg("unable to save head image")
 		return
 	}
+
 	log.Debug().Str("player", playerName).Msg("saved player head")
 }
 
 // SaveBody renders and saves the full-body image for the given skin.
 func SaveBody(img image.Image, outputDir, playerName, playerModel string) {
 	path := bodyPath(outputDir, playerName)
+
 	nrgba, ok := img.(*image.NRGBA)
 	if !ok {
 		log.Warn().Str("player", playerName).Msg("unexpected image type for body render")
 		return
 	}
+
 	rendered := skin.RenderBody(nrgba, skin.Options{Scale: 10, Overlay: true, Slim: playerModel == "slim", Square: false})
 	if err := saveImage(rendered, path); err != nil {
 		log.Warn().Str("player", playerName).Err(err).Msg("unable to save body image")
 		return
 	}
+
 	log.Debug().Str("player", playerName).Msg("saved player body")
 }
 
-// HeadExists reports whether the head image for playerName exists on disk.
+func downloadImage(url string) (image.Image, error) {
+	data, err := utils.NewHttpRequest(url)
+	if err != nil {
+		return nil, err
+	}
+
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("decode image from %q: %w", url, err)
+	}
+
+	return img, nil
+}
+
+func saveImage(img image.Image, path string) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o775); err != nil {
+		return fmt.Errorf("create directory: %w", err)
+	}
+
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o664)
+	if err != nil {
+		return fmt.Errorf("create file: %w", err)
+	}
+
+	defer f.Close()
+
+	if err := png.Encode(f, img); err != nil {
+		return fmt.Errorf("encode PNG: %w", err)
+	}
+
+	return nil
+}
+
 func HeadExists(outputDir, playerName string) bool {
 	return utils.FileExists(headPath(outputDir, playerName), true)
 }
 
-// BodyExists reports whether the body image for playerName exists on disk.
 func BodyExists(outputDir, playerName string) bool {
 	return utils.FileExists(bodyPath(outputDir, playerName), true)
 }
@@ -143,31 +182,4 @@ func headPath(outputDir, playerName string) string {
 
 func bodyPath(outputDir, playerName string) string {
 	return filepath.Join(outputDir, "assets", "images", "player", fmt.Sprintf("body_%s.png", playerName))
-}
-
-func downloadImage(url string) (image.Image, error) {
-	data, err := utils.NewHttpRequest(url)
-	if err != nil {
-		return nil, err
-	}
-	img, _, err := image.Decode(bytes.NewReader(data))
-	if err != nil {
-		return nil, fmt.Errorf("decode image from %q: %w", url, err)
-	}
-	return img, nil
-}
-
-func saveImage(img image.Image, path string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o775); err != nil {
-		return fmt.Errorf("create directory: %w", err)
-	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o664)
-	if err != nil {
-		return fmt.Errorf("create file: %w", err)
-	}
-	defer f.Close()
-	if err := png.Encode(f, img); err != nil {
-		return fmt.Errorf("encode PNG: %w", err)
-	}
-	return nil
 }

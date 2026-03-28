@@ -27,18 +27,15 @@ type CachedPlayer struct {
 
 // PlayerCache manages the persisted list of resolved players.
 type PlayerCache struct {
-	Players []*CachedPlayer `json:"players"`
-
-	cfg      *config.Config
+	Players  []*CachedPlayer `json:"players"`
 	filePath string
 }
 
 // NewPlayerCache loads the player cache from disk. Returns an empty cache
 // (without error) if the file does not exist yet.
-func NewPlayerCache(cfg *config.Config) *PlayerCache {
+func NewPlayerCache() *PlayerCache {
 	pc := &PlayerCache{
-		cfg:      cfg,
-		filePath: cfg.PlayerCachePath(),
+		filePath: config.Get().PlayerCachePath(),
 	}
 
 	data, err := os.ReadFile(pc.filePath)
@@ -49,7 +46,7 @@ func NewPlayerCache(cfg *config.Config) *PlayerCache {
 
 	if err := json.Unmarshal(data, pc); err != nil {
 		log.Error().Err(err).Msg("failed to decode player cache, starting empty")
-		return &PlayerCache{cfg: cfg, filePath: pc.filePath}
+		return &PlayerCache{filePath: pc.filePath}
 	}
 
 	log.Info().Str("path", pc.filePath).Int("players", len(pc.Players)).Msg("player cache loaded")
@@ -111,11 +108,11 @@ func (pc *PlayerCache) EnsureSkin(p *CachedPlayer) {
 	if p.Skin == nil {
 		p.Skin = player.GetSkin(p.SkinURL)
 	}
-	if pc.isExpired(p) || !player.HeadExists(pc.cfg.OutputDir, p.Name) {
-		player.SaveHead(p.Skin, pc.cfg.OutputDir, p.Name, p.SkinModel)
+	if pc.isExpired(p) || !player.HeadExists(config.Get().OutputDir, p.Name) {
+		player.SaveHead(p.Skin, config.Get().OutputDir, p.Name, p.SkinModel)
 	}
-	if pc.isExpired(p) || !player.BodyExists(pc.cfg.OutputDir, p.Name) {
-		player.SaveBody(p.Skin, pc.cfg.OutputDir, p.Name, p.SkinModel)
+	if pc.isExpired(p) || !player.BodyExists(config.Get().OutputDir, p.Name) {
+		player.SaveBody(p.Skin, config.Get().OutputDir, p.Name, p.SkinModel)
 	}
 }
 
@@ -129,7 +126,7 @@ func (pc *PlayerCache) findByUUID(uuid string) *CachedPlayer {
 }
 
 func (pc *PlayerCache) isExpired(p *CachedPlayer) bool {
-	maxAge := time.Duration(pc.cfg.CacheMaxAge) * time.Hour
+	maxAge := time.Duration(config.Get().CacheMaxAge) * time.Hour
 	if time.Since(p.LastCheck) > maxAge {
 		log.Warn().
 			Str("name", p.Name).
@@ -142,28 +139,28 @@ func (pc *PlayerCache) isExpired(p *CachedPlayer) bool {
 }
 
 func (pc *PlayerCache) fetchFromAPI(uuid string) (*CachedPlayer, error) {
-	data, err := player.Fetch(uuid, pc.cfg.QueryDelay)
+	data, err := player.Fetch(uuid, config.Get().QueryDelay)
 	if err != nil {
 		return nil, fmt.Errorf("fetch player %q: %w", uuid, err)
 	}
 	return &CachedPlayer{
 		Name:      data.Name,
 		UUID:      uuid,
-		LastCheck: utils.AddRandomTime(time.Now(), pc.cfg.LastCheckJitter),
+		LastCheck: utils.AddRandomTime(time.Now(), config.Get().LastCheckJitter),
 		SkinURL:   data.SkinURL,
 		SkinModel: data.SkinModel,
 	}, nil
 }
 
 func (pc *PlayerCache) refresh(p *CachedPlayer) error {
-	data, err := player.Fetch(p.UUID, pc.cfg.QueryDelay)
+	data, err := player.Fetch(p.UUID, config.Get().QueryDelay)
 	if err != nil {
 		return err
 	}
 	p.Name = data.Name
 	p.SkinURL = data.SkinURL
 	p.SkinModel = data.SkinModel
-	p.LastCheck = utils.AddRandomTime(time.Now(), pc.cfg.LastCheckJitter)
+	p.LastCheck = utils.AddRandomTime(time.Now(), config.Get().LastCheckJitter)
 	log.Info().Str("name", p.Name).Msg("player cache entry refreshed")
 	return nil
 }

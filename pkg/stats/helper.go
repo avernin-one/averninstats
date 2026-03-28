@@ -60,7 +60,6 @@ type StatEntry struct {
 // per-stat score lists. UUIDs are stored internally during ProcessFile and
 // replaced with real names in WritePlayerFiles.
 type Processor struct {
-	cfg        *config.Config
 	lookup     *cache.Lookup
 	highscores map[string]ScoreList
 	scores     struct {
@@ -74,9 +73,8 @@ type Processor struct {
 	rankedUUIDs map[string]struct{}
 }
 
-func New(cfg *config.Config, l *cache.Lookup) *Processor {
+func New(l *cache.Lookup) *Processor {
 	p := &Processor{
-		cfg:         cfg,
 		lookup:      l,
 		highscores:  make(map[string]ScoreList),
 		rankedUUIDs: make(map[string]struct{}),
@@ -133,11 +131,11 @@ func (p *Processor) Flush(pc *cache.PlayerCache) error {
 		p.setMedals(player)
 
 		if !p.meetsPlaytimeRequirement(player) {
-			log.Warn().Str("name", player.Name).Msg("player below minimum playtime, skipping")
+			log.Warn().Str("name", player.Name).Int("min_playtime", config.Get().MinPlayTime).Msg("player below minimum playtime, skipping")
 			continue
 		}
 
-		path := filepath.Join(p.cfg.OutputDir, cache.TypePlayer,
+		path := filepath.Join(config.Get().OutputDir, cache.TypePlayer,
 			fmt.Sprintf("%s.json", player.Name))
 		if err := saveJSON(path, player); err != nil {
 			log.Warn().Err(err).Str("player", player.Name).Msg("failed to write player file")
@@ -151,7 +149,7 @@ func (p *Processor) Flush(pc *cache.PlayerCache) error {
 
 	// Write global stat files.
 	for name, scores := range p.highscores {
-		path := filepath.Join(p.cfg.OutputDir, cache.TypeHighscore,
+		path := filepath.Join(config.Get().OutputDir, cache.TypeHighscore,
 			fmt.Sprintf("%s.json", name))
 		if err := saveJSON(path, HighscoreEntry{Name: name, Scores: scores}); err != nil {
 			log.Warn().Err(err).Str("stat", name).Msg("failed to write highscore file")
@@ -167,7 +165,7 @@ func (p *Processor) Flush(pc *cache.PlayerCache) error {
 		{cache.TypeEntity, p.scores.Entity},
 	} {
 		for name, actionScores := range group.data {
-			path := filepath.Join(p.cfg.OutputDir, group.typ,
+			path := filepath.Join(config.Get().OutputDir, group.typ,
 				fmt.Sprintf("%s.json", name))
 			if err := saveJSON(path, StatEntry{Name: name, Type: group.typ, Scores: actionScores}); err != nil {
 				log.Warn().Err(err).Str("type", group.typ).Str("stat", name).Msg("failed to write stat file")
@@ -216,7 +214,7 @@ func (p *Processor) processCustom(entries map[string]int, player *Player) {
 			p.highscores[stat] = make(ScoreList)
 		}
 		p.highscores[stat][count] = append(p.highscores[stat][count], player.UUID)
-		trimScoreList(p.highscores[stat], p.cfg.NumHighscores)
+		trimScoreList(p.highscores[stat], config.Get().NumHighscores)
 	}
 }
 
@@ -250,7 +248,7 @@ func (p *Processor) processStatEntry(player *Player, action, stat string, count 
 			(*t.scores)[stat][action] = make(ScoreList)
 		}
 		(*t.scores)[stat][action][count] = append((*t.scores)[stat][action][count], player.UUID)
-		trimScoreList((*t.scores)[stat][action], p.cfg.NumHighscores)
+		trimScoreList((*t.scores)[stat][action], config.Get().NumHighscores)
 
 		// Player personal top-N
 		playerCat := player.Scores[t.category]
@@ -258,7 +256,7 @@ func (p *Processor) processStatEntry(player *Player, action, stat string, count 
 			playerCat[action] = make(ScoreList)
 		}
 		playerCat[action][count] = append(playerCat[action][count], stat)
-		trimScoreList(playerCat[action], p.cfg.NumPlayerHighscores)
+		trimScoreList(playerCat[action], config.Get().NumPlayerHighscores)
 
 		// Track that this UUID appears in at least one ranking.
 		p.rankedUUIDs[player.UUID] = struct{}{}
@@ -297,6 +295,7 @@ func (p *Processor) setMedals(player *Player) {
 			if rank >= 3 {
 				break // only gold/silver/bronze
 			}
+			
 			for _, name := range scoreList[key] {
 				if name != player.Name {
 					continue
@@ -335,7 +334,8 @@ func (p *Processor) meetsPlaytimeRequirement(player *Player) bool {
 	if !ok {
 		return false
 	}
-	return ticks/20/60 >= p.cfg.MinPlayTime
+
+	return ticks/20/60 >= config.Get().MinPlayTime
 }
 
 // --- Helpers -----------------------------------------------------------------
@@ -344,7 +344,9 @@ func trimNamespace(key string) string {
 	if i := strings.IndexByte(key, ':'); i >= 0 {
 		return key[i+1:]
 	}
+
 	log.Warn().Str("key", key).Msg("stats key missing namespace separator")
+
 	return key
 }
 
@@ -352,13 +354,17 @@ func saveJSON(path string, v any) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o775); err != nil {
 		return fmt.Errorf("create dir: %w", err)
 	}
+
 	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return fmt.Errorf("encode JSON: %w", err)
 	}
+
 	if err := os.WriteFile(path, data, 0o664); err != nil {
 		return fmt.Errorf("write file: %w", err)
 	}
-	log.Debug().Str("path", path).Msg("saved")
+
+	log.Debug().Str("path", path).Msg("file saved")
+
 	return nil
 }

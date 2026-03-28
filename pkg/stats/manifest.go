@@ -12,6 +12,7 @@ import (
 	"sort"
 
 	"github.com/avernin-one/averninstats/pkg/cache"
+	"github.com/avernin-one/averninstats/pkg/config"
 	"github.com/rs/zerolog/log"
 )
 
@@ -36,11 +37,13 @@ func (p *Processor) WriteManifests() error {
 	if err := p.writeHighscoreManifest(); err != nil {
 		return err
 	}
+
 	for _, cat := range []string{cache.TypeBlock, cache.TypeItem, cache.TypeEntity} {
 		if err := p.writeStatManifest(cat); err != nil {
 			return err
 		}
 	}
+
 	return p.writePlayerManifest()
 }
 
@@ -49,9 +52,11 @@ func (p *Processor) writeHighscoreManifest() error {
 	for name := range p.highscores {
 		names = append(names, name)
 	}
+
 	sort.Strings(names)
+
 	return writeManifestJSON(
-		filepath.Join(p.cfg.OutputDir, cache.TypeHighscore, "_manifest.json"),
+		filepath.Join(config.Get().OutputDir, cache.TypeHighscore, "_manifest.json"),
 		highscoreManifest{Stats: names},
 	)
 }
@@ -73,9 +78,11 @@ func (p *Processor) writeStatManifest(category string) error {
 	for name := range data {
 		names = append(names, name)
 	}
+
 	sort.Strings(names)
+
 	return writeManifestJSON(
-		filepath.Join(p.cfg.OutputDir, category, "_manifest.json"),
+		filepath.Join(config.Get().OutputDir, category, "_manifest.json"),
 		statManifest{Stats: names},
 	)
 }
@@ -87,9 +94,11 @@ func (p *Processor) writePlayerManifest() error {
 			names = append(names, player.Name)
 		}
 	}
+
 	sort.Strings(names)
+
 	return writeManifestJSON(
-		filepath.Join(p.cfg.OutputDir, cache.TypePlayer, "_manifest.json"),
+		filepath.Join(config.Get().OutputDir, cache.TypePlayer, "_manifest.json"),
 		playerManifest{Players: names},
 	)
 }
@@ -98,13 +107,17 @@ func writeManifestJSON(path string, v any) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o775); err != nil {
 		return fmt.Errorf("create dir for manifest: %w", err)
 	}
+
 	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return fmt.Errorf("encode manifest: %w", err)
 	}
+
 	if err := os.WriteFile(path, data, 0o664); err != nil {
 		return fmt.Errorf("write manifest %q: %w", path, err)
 	}
-	log.Debug().Str("path", path).Msg("manifest written")
+
+	log.Debug().Str("path", path).Msg("manifest saved")
+
 	return nil
 }

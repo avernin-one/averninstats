@@ -35,7 +35,8 @@ func SaveYAMLFile(filePath string, data interface{}) error {
 		return fmt.Errorf("encode YAML to %q: %w", filePath, err)
 	}
 
-	log.Info().Str("filepath", filePath).Msg("saved file")
+	log.Debug().Str("filepath", filePath).Msg("saved file")
+
 	return nil
 }
 
@@ -58,7 +59,8 @@ func SaveJSONFile(filePath string, data interface{}) error {
 		return fmt.Errorf("encode JSON to %q: %w", filePath, err)
 	}
 
-	log.Info().Str("filepath", filePath).Msg("saved file")
+	log.Debug().Str("filepath", filePath).Msg("saved file")
+
 	return nil
 }
 
@@ -69,6 +71,7 @@ func FileExists(filePath string, falseIfEmpty bool) bool {
 	if os.IsNotExist(err) {
 		return false
 	}
+
 	return !(falseIfEmpty && info.Size() == 0)
 }
 
@@ -99,5 +102,6 @@ func AddRandomTime(currentTime time.Time, extraHours int) time.Time {
 	if extraHours == 0 {
 		return currentTime
 	}
+
 	return currentTime.Add(time.Duration(rand.Intn(extraHours)) * time.Hour)
 }

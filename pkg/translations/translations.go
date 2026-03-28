@@ -35,6 +35,12 @@ type assetIndex struct {
 	} `json:"objects"`
 }
 
+// i18nManifest is written to i18n/_manifest.json so the frontend knows
+// which language files are available without needing a directory listing.
+type i18nManifest struct {
+	Languages []string `json:"languages"`
+}
+
 var (
 	// populateRe classifies a raw Mojang key into block/item/entity/stat.
 	populateRe = regexp.MustCompile(`^(block|item|entity|stat)(\.minecraft)?\.`)
@@ -42,70 +48,152 @@ var (
 	processRe = regexp.MustCompile(`^(block|item|entity|stats?(_type)?)(\.minecraft)?\.`)
 
 	// lookupSource is the language used to build the Lookup.
-	// en-gb covers all vanilla block/item/entity/stat keys.
 	lookupSource = "en-gb"
 )
 
-// Run returns a ready-to-use Lookup. If the cache is complete it is returned
-// immediately. Otherwise all language files are downloaded, the lookup is
-// built from en-gb, and everything is persisted to cache.
-func Run(cfg *config.Config) (*cache.Lookup, error) {
-	cachePath := cfg.LookupCachePath()
-
-	if l, err := cache.LoadLookup(cachePath); err == nil && !l.AnyEmpty() {
-		log.Info().Msg("lookup loaded from cache, skipping download")
-		return l, nil
-	}
-
-	log.Info().Str("version", cfg.MinecraftVersion).Msg("building lookup from language files")
-
-	index, err := fetchAssetIndex(cfg.MinecraftVersion)
+// Run writes processed i18n files to config.Get().I18nDir() and returns a
+// ready-to-use Lookup.
+//
+// The raw language files are cached under <cacheDir>/<version>/lang-raw so
+// subsequent runs skip downloading. Processed i18n files are currently always
+// re-written so version changes are always picked up.
+//
+// The Lookup itself is cached separately in lookup.json. If that cache is
+// valid the download/processing step is still run for the i18n files, but
+// the Lookup is returned from cache instead of being rebuilt.
+func Run() (*cache.Lookup, error) {
+	cachePath := config.Get().LookupCachePath()
+	index, err := fetchAssetIndex(config.Get().MinecraftVersion)
 	if err != nil {
+		// If the asset index is unavailable, try returning a cached lookup
+		// so the rest of the program can still run.
+		if l, cacheErr := cache.LoadLookup(cachePath); cacheErr == nil && !l.AnyEmpty() {
+			log.Warn().Err(err).Msg("asset index unavailable, using cached lookup")
+			return l, nil
+		}
 		return nil, err
 	}
 
+	log.Info().Str("version", config.Get().MinecraftVersion).Msg("processing language files")
+
 	l := &cache.Lookup{}
-	const langPrefix = "minecraft/lang/"
+	const langPrefix string = "minecraft/lang/"
+
+	var languages []string
 
 	for key, obj := range index.Objects {
 		if !strings.HasPrefix(key, langPrefix) {
 			continue
 		}
 
-		// "minecraft/lang/en_gb.json" -> "en-gb"
-		name := strings.TrimPrefix(key, langPrefix)
-		name = strings.ReplaceAll(name, "_", "-")
-		name = strings.TrimSuffix(name, filepath.Ext(name))
+		name := langName(key, langPrefix)
 
-		if name == lookupSource {
-			raw, err := fetchRawLanguage(cfg, name, obj.Hash)
-			if err != nil {
-				return nil, fmt.Errorf("fetch lookup source %q: %w", name, err)
-			}
-			populateLookup(l, raw)
-			saveProcessed(cfg, name, raw)
-		} else {
-			if err := ensureLanguageCached(cfg, name, obj.Hash); err != nil {
-				log.Error().Err(err).Str("language", name).Msg("failed to cache language, skipping")
-			}
+		// Fetch from raw cache or download.
+		raw, err := getRaw(name, obj.Hash)
+		if err != nil {
+			log.Error().Err(err).Str("language", name).Msg("failed to get language, skipping")
+			continue
 		}
+
+		// Build the lookup from the source language.
+		if name == lookupSource {
+			populateLookup(l, raw)
+		}
+
+		// Always re-write the processed i18n file so version changes are picked up.
+		if err := writeProcessed(name, raw); err != nil {
+			log.Warn().Err(err).Str("language", name).Msg("failed to write processed language file")
+		}
+
+		languages = append(languages, name)
 	}
 
 	if l.AnyEmpty() {
-		return nil, fmt.Errorf("lookup source language %q not found in asset index, check --minecraft-version", lookupSource)
+		return nil, fmt.Errorf(
+			"lookup source language %q not found in asset index, check --minecraft-version",
+			lookupSource,
+		)
 	}
 
 	sort.Strings(l.Block)
 	sort.Strings(l.Item)
 	sort.Strings(l.Entity)
 	sort.Strings(l.Custom)
+	sort.Strings(languages)
 
 	if err := l.Save(cachePath); err != nil {
 		log.Warn().Err(err).Msg("failed to persist lookup cache")
 	}
 
+	if err := writeManifest(languages); err != nil {
+		log.Warn().Err(err).Msg("failed to write i18n manifest")
+	}
+
 	return l, nil
 }
+
+// getRaw returns the raw language map for a given language. It first checks
+// the local raw cache; if not found it downloads from Mojang and caches it.
+func getRaw(name, hash string) (map[string]string, error) {
+	rawPath := rawCachePath(name)
+
+	if utils.FileExists(rawPath, true) {
+		raw, err := loadRaw(rawPath)
+		if err == nil {
+			log.Debug().Str("language", name).Msg("raw language loaded from cache")
+			return raw, nil
+		}
+
+		log.Warn().Err(err).Str("language", name).Msg("raw cache unreadable, re-downloading")
+	}
+
+	return downloadRaw(name, hash)
+}
+
+// downloadRaw fetches a raw language file from Mojang's resource CDN and
+// persists it to the raw cache.
+func downloadRaw(name, hash string) (map[string]string, error) {
+	url := fmt.Sprintf("https://resources.download.minecraft.net/%s/%s", hash[:2], hash)
+
+	body, err := utils.NewHttpRequest(url)
+	if err != nil {
+		return nil, fmt.Errorf("download %s: %w", name, err)
+	}
+
+	var raw map[string]string
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("decode %s: %w", name, err)
+	}
+
+	if err := utils.SaveJSONFile(rawCachePath(name), raw); err != nil {
+		log.Warn().Err(err).Str("language", name).Msg("failed to cache raw language file")
+	}
+
+	log.Debug().Str("language", name).Str("url", url).Msg("language downloaded")
+
+	return raw, nil
+}
+
+// writeProcessed strips irrelevant keys and writes the processed language
+// file to config.Get().I18nDir(). It always overwrites any existing file.
+func writeProcessed(name string, raw map[string]string) error {
+	outPath := filepath.Join(config.Get().I18nDir(), fmt.Sprintf("%s.json", name))
+	processed := stripTranslations(raw)
+	if err := utils.SaveJSONFile(outPath, processed); err != nil {
+		return fmt.Errorf("save %s: %w", name, err)
+	}
+	return nil
+}
+
+// writeManifest writes i18n/_manifest.json listing all available languages.
+func writeManifest(languages []string) error {
+	path := filepath.Join(config.Get().I18nDir(), "_manifest.json")
+	return utils.SaveJSONFile(path, i18nManifest{Languages: languages})
+}
+
+// ---------------------------------------------------------------------------
+// Mojang API
+// ---------------------------------------------------------------------------
 
 func fetchAssetIndex(minecraftVersion string) (*assetIndex, error) {
 	body, err := utils.NewHttpRequest("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json")
@@ -118,16 +206,18 @@ func fetchAssetIndex(minecraftVersion string) (*assetIndex, error) {
 		return nil, fmt.Errorf("decode version manifest: %w", err)
 	}
 
-	versionURL := ""
+	var versionURL string
 	for _, v := range manifest.Versions {
 		if v.ID == minecraftVersion {
 			versionURL = v.URL
 			break
 		}
 	}
+
 	if versionURL == "" {
 		return nil, fmt.Errorf("version %q not found in manifest", minecraftVersion)
 	}
+
 	log.Info().Str("version", minecraftVersion).Str("url", versionURL).Msg("version URL resolved")
 
 	body, err = utils.NewHttpRequest(versionURL)
@@ -139,10 +229,12 @@ func fetchAssetIndex(minecraftVersion string) (*assetIndex, error) {
 	if err := json.Unmarshal(body, &ver); err != nil {
 		return nil, fmt.Errorf("decode version data: %w", err)
 	}
+
 	if ver.AssetIndex.URL == "" {
 		return nil, fmt.Errorf("asset index URL missing for version %q", minecraftVersion)
 	}
-	log.Info().Str("url", ver.AssetIndex.URL).Msg("asset URL resolved")
+
+	log.Info().Str("url", ver.AssetIndex.URL).Msg("asset index URL resolved")
 
 	body, err = utils.NewHttpRequest(ver.AssetIndex.URL)
 	if err != nil {
@@ -157,94 +249,66 @@ func fetchAssetIndex(minecraftVersion string) (*assetIndex, error) {
 	return &index, nil
 }
 
-func fetchRawLanguage(cfg *config.Config, name, hash string) (map[string]string, error) {
-	rawPath := filepath.Join(cfg.CacheDir, "tmp", "lang-raw", cfg.MinecraftVersion,
-		fmt.Sprintf("%s.json", name))
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
-	if utils.FileExists(rawPath, true) {
-		if data, err := os.ReadFile(rawPath); err == nil {
-			var raw map[string]string
-			if json.Unmarshal(data, &raw) == nil {
-				log.Debug().Str("language", name).Msg("raw language loaded from cache")
-				return raw, nil
-			}
-		}
-	}
+// langName converts an asset index key like "minecraft/lang/en_gb.json" to "en-gb".
+func langName(key, prefix string) string {
+	name := strings.TrimPrefix(key, prefix)
+	name = strings.ReplaceAll(name, "_", "-")
+	name = strings.TrimSuffix(name, filepath.Ext(name))
+	return name
+}
 
-	url := fmt.Sprintf("https://resources.download.minecraft.net/%s/%s", hash[:2], hash)
-	body, err := utils.NewHttpRequest(url)
+// rawCachePath returns the path where a raw language file is cached locally.
+func rawCachePath(name string) string {
+	return filepath.Join(config.Get().CacheDir, "lang-raw", config.Get().MinecraftVersion, name+".json")
+}
+
+// loadRaw reads and decodes a raw language file from disk.
+func loadRaw(path string) (map[string]string, error) {
+	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("download %s: %w", name, err)
+		return nil, err
 	}
 
 	var raw map[string]string
-	if err := json.Unmarshal(body, &raw); err != nil {
-		return nil, fmt.Errorf("decode %s: %w", name, err)
-	}
-
-	if err := utils.SaveJSONFile(rawPath, raw); err != nil {
-		log.Warn().Err(err).Str("language", name).Msg("failed to cache raw language file")
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil, err
 	}
 
 	return raw, nil
 }
 
-func ensureLanguageCached(cfg *config.Config, name, hash string) error {
-	outFile := filepath.Join(cfg.I18nDir(), fmt.Sprintf("%s.json", name))
-	if utils.FileExists(outFile, true) {
-		log.Debug().Str("language", name).Msg("language already cached")
-		return nil
-	}
-
-	url := fmt.Sprintf("https://resources.download.minecraft.net/%s/%s", hash[:2], hash)
-	body, err := utils.NewHttpRequest(url)
-	if err != nil {
-		return fmt.Errorf("download %s: %w", name, err)
-	}
-
-	var raw map[string]string
-	if err := json.Unmarshal(body, &raw); err != nil {
-		return fmt.Errorf("decode %s: %w", name, err)
-	}
-
-	if err := utils.SaveJSONFile(outFile, stripTranslations(raw)); err != nil {
-		return fmt.Errorf("save %s: %w", name, err)
-	}
-
-	log.Debug().Str("language", name).Str("url", url).Msg("language cached")
-	return nil
-}
-
-func saveProcessed(cfg *config.Config, name string, raw map[string]string) {
-	outFile := filepath.Join(cfg.I18nDir(), fmt.Sprintf("%s.json", name))
-	if utils.FileExists(outFile, true) {
-		return
-	}
-	if err := utils.SaveJSONFile(outFile, stripTranslations(raw)); err != nil {
-		log.Warn().Err(err).Str("language", name).Msg("failed to save processed language file")
-	}
-}
-
+// stripTranslations keeps only block/item/entity/stat keys and strips their
+// namespace prefix, cleaning up placeholder artifacts in the values.
 func stripTranslations(raw map[string]string) map[string]string {
 	out := make(map[string]string, len(raw))
 	for key, val := range raw {
 		if !processRe.MatchString(key) {
 			continue
 		}
+
 		stripped := processRe.ReplaceAllString(key, "")
-		cleaned := strings.TrimSpace(strings.ReplaceAll(
-			strings.ReplaceAll(val, "%s", ""), "  ", " "))
+		cleaned := strings.TrimSpace(
+			strings.ReplaceAll(strings.ReplaceAll(val, "%s", ""), "  ", " "),
+		)
+
 		out[stripped] = cleaned
 	}
+
 	return out
 }
 
+// populateLookup fills a Lookup from the source language raw map.
 func populateLookup(l *cache.Lookup, raw map[string]string) {
 	for key := range raw {
 		m := populateRe.FindStringSubmatch(key)
 		if len(m) < 2 {
 			continue
 		}
+
 		stripped := processRe.ReplaceAllString(key, "")
 		switch m[1] {
 		case "block":

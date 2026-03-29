@@ -64,6 +64,19 @@ func SaveJSONFile(filePath string, data interface{}) error {
 	return nil
 }
 
+func ReadJSONFile(filePath string, out interface{}) error {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("read file %q: %w", filePath, err)
+	}
+
+	if err := json.Unmarshal(data, out); err != nil {
+		return fmt.Errorf("unmarshal JSON from %q: %w", filePath, err)
+	}
+
+	return nil
+}
+
 // FileExists returns true if the file at filePath exists.
 // When falseIfEmpty is true it also returns false for zero-byte files.
 func FileExists(filePath string, falseIfEmpty bool) bool {

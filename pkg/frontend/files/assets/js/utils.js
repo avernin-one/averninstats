@@ -115,7 +115,7 @@ export function flattenScoreList(scoreList) {
   const entries = [];
 
   for (const [scoreStr, names] of Object.entries(scoreList ?? {})) {
-    const score = parseInt(scoreStr, 10);
+    const score = Number.parseInt(scoreStr, 10);
     for (const name of names) {
       if (name) {
         entries.push({ score, name });

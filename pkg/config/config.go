@@ -140,46 +140,35 @@ func (c *Config) I18nDir() string {
 	return filepath.Join(c.OutputDir, i18nDir)
 }
 
-// LookupCachePath returns the versioned lookup cache file path.
-func (c *Config) LookupCachePath() string {
-	return filepath.Join(c.CacheDir, c.MinecraftVersion, "lookup.json")
-}
-
-// PlayerCachePath returns the player cache file path.
-func (c *Config) PlayerCachePath() string {
-	return filepath.Join(c.CacheDir, "playercache.json")
-}
-
 func readFile(c *Config) {
 	if c.Config == "" {
 		log.Warn().Msg("no config file specified")
 		return
 	}
+
 	data, err := os.ReadFile(filepath.Clean(c.Config))
 	if err != nil {
 		log.Error().Err(err).Str("path", c.Config).Msg("error reading config file")
 		return
 	}
+
 	if err := yaml.Unmarshal(data, c); err != nil {
 		log.Fatal().Err(err).Msg("error parsing config file")
 	}
 }
 
 func validate(c *Config) {
-	dirs := []struct {
-		path string
-		name string
-	}{
-		{c.OutputDir, "output"},
-		{c.CacheDir, "cache"},
-		{c.I18nDir(), "i18n"},
+	dirs := []string{
+		c.OutputDir,
+		c.CacheDir,
+		c.I18nDir(),
 	}
 
 	for _, d := range dirs {
-		if err := os.MkdirAll(d.path, 0o775); err != nil {
-			log.Fatal().Err(err).Str("path", d.path).Msgf("failed to create %s directory", d.name)
+		if err := os.MkdirAll(d, 0o775); err != nil {
+			log.Fatal().Err(err).Str("path", d).Msg("failed to create directory")
 		}
 
-		log.Info().Str("path", d.path).Str("name", d.name).Msg("directory ready")
+		log.Debug().Str("path", d).Msg("directory ready")
 	}
 }

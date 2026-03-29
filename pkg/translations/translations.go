@@ -46,7 +46,6 @@ var (
 	populateRe = regexp.MustCompile(`^(block|item|entity|stat)(\.minecraft)?\.`)
 	// processRe strips the full namespaced prefix.
 	processRe = regexp.MustCompile(`^(block|item|entity|stats?(_type)?)(\.minecraft)?\.`)
-
 	// lookupSource is the language used to build the Lookup.
 	lookupSource = "en-gb"
 )
@@ -62,15 +61,16 @@ var (
 // valid the download/processing step is still run for the i18n files, but
 // the Lookup is returned from cache instead of being rebuilt.
 func Run() (*cache.Lookup, error) {
-	cachePath := config.Get().LookupCachePath()
 	index, err := fetchAssetIndex(config.Get().MinecraftVersion)
 	if err != nil {
-		// If the asset index is unavailable, try returning a cached lookup
-		// so the rest of the program can still run.
-		if l, cacheErr := cache.LoadLookup(cachePath); cacheErr == nil && !l.AnyEmpty() {
+		// If the asset index is unavailable:
+		// - try returning a cached lookup
+		// - unless any cached lookup is empty, in which case return the error
+		if l, cacheErr := cache.LoadLookup(); cacheErr == nil && !l.AnyEmpty() {
 			log.Warn().Err(err).Msg("asset index unavailable, using cached lookup")
 			return l, nil
 		}
+
 		return nil, err
 	}
 
@@ -121,7 +121,7 @@ func Run() (*cache.Lookup, error) {
 	sort.Strings(l.Custom)
 	sort.Strings(languages)
 
-	if err := l.Save(cachePath); err != nil {
+	if err := l.Save(); err != nil {
 		log.Warn().Err(err).Msg("failed to persist lookup cache")
 	}
 
@@ -135,7 +135,7 @@ func Run() (*cache.Lookup, error) {
 // getRaw returns the raw language map for a given language. It first checks
 // the local raw cache; if not found it downloads from Mojang and caches it.
 func getRaw(name, hash string) (map[string]string, error) {
-	rawPath := rawCachePath(name)
+	rawPath := cache.RawLanguageFile(name)
 
 	if utils.FileExists(rawPath, true) {
 		raw, err := loadRaw(rawPath)
@@ -165,7 +165,7 @@ func downloadRaw(name, hash string) (map[string]string, error) {
 		return nil, fmt.Errorf("decode %s: %w", name, err)
 	}
 
-	if err := utils.SaveJSONFile(rawCachePath(name), raw); err != nil {
+	if err := utils.SaveJSONFile(cache.RawLanguageFile(name), raw); err != nil {
 		log.Warn().Err(err).Str("language", name).Msg("failed to cache raw language file")
 	}
 
@@ -182,6 +182,7 @@ func writeProcessed(name string, raw map[string]string) error {
 	if err := utils.SaveJSONFile(outPath, processed); err != nil {
 		return fmt.Errorf("save %s: %w", name, err)
 	}
+
 	return nil
 }
 
@@ -196,6 +197,19 @@ func writeManifest(languages []string) error {
 // ---------------------------------------------------------------------------
 
 func fetchAssetIndex(minecraftVersion string) (*assetIndex, error) {
+	var index assetIndex
+
+	if utils.FileExists(cache.AssetIndexFile(), true) {
+		if err := utils.ReadJSONFile(cache.AssetIndexFile(), &index); err == nil {
+			log.Info().Str("cache", minecraftVersion).Msg("asset index loaded from cache")
+			return &index, nil
+		}
+	}
+
+	// If the asset index is unavailable, the program can still run using cached
+	// lookups and previously processed i18n files, so this is a warning, not an error.
+	log.Warn().Str("version", minecraftVersion).Msg("asset index not found in cache, downloading")
+
 	body, err := utils.NewHttpRequest("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json")
 	if err != nil {
 		return nil, fmt.Errorf("fetch version manifest: %w", err)
@@ -241,10 +255,11 @@ func fetchAssetIndex(minecraftVersion string) (*assetIndex, error) {
 		return nil, fmt.Errorf("fetch asset index: %w", err)
 	}
 
-	var index assetIndex
 	if err := json.Unmarshal(body, &index); err != nil {
 		return nil, fmt.Errorf("decode asset index: %w", err)
 	}
+
+	utils.SaveJSONFile(cache.AssetIndexFile(), index)
 
 	return &index, nil
 }
@@ -259,11 +274,6 @@ func langName(key, prefix string) string {
 	name = strings.ReplaceAll(name, "_", "-")
 	name = strings.TrimSuffix(name, filepath.Ext(name))
 	return name
-}
-
-// rawCachePath returns the path where a raw language file is cached locally.
-func rawCachePath(name string) string {
-	return filepath.Join(config.Get().CacheDir, "lang-raw", config.Get().MinecraftVersion, name+".json")
 }
 
 // loadRaw reads and decodes a raw language file from disk.

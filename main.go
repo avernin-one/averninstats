@@ -41,11 +41,13 @@ func main() {
 		log.Fatal().Err(err).Str("dir", cfg.StatsSourceDir).Msg("cannot read stats source directory")
 	}
 
-	total := countJSONFiles(entries)
 	current := 0
+	skipped := 0
 
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
+			skipped++
+			log.Debug().Bool("is_dir", entry.IsDir()).Str("name", entry.Name()).Msg("skipping non-JSON file")
 			continue
 		}
 
@@ -56,7 +58,7 @@ func main() {
 		log.Info().
 			Str("file", entry.Name()).
 			Int("current", current).
-			Int("total", total).
+			Int("skipped", skipped).
 			Msg("processing stats file")
 
 		if err := proc.ProcessFile(path, uuid); err != nil {
@@ -79,14 +81,4 @@ func main() {
 	}
 
 	log.Info().TimeDiff("duration", time.Now(), start).Msg("finished")
-}
-
-func countJSONFiles(entries []os.DirEntry) int {
-	n := 0
-	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".json") {
-			n++
-		}
-	}
-	return n
 }

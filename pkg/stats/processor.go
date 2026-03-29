@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/avernin-one/averninstats/pkg/cache"
@@ -70,19 +71,20 @@ type Processor struct {
 	players []*Player
 	// rankedUUIDs tracks which UUIDs appear in any score list, enabling
 	// playerIsRanked checks without re-traversing all score maps.
-	rankedUUIDs map[string]struct{}
+	rankedUUIDs []string
 }
 
 func New(l *cache.Lookup) *Processor {
 	p := &Processor{
 		lookup:      l,
 		highscores:  make(map[string]ScoreList),
-		rankedUUIDs: make(map[string]struct{}),
+		rankedUUIDs: make([]string, 0),
 	}
 
 	p.scores.Block = make(StatScores)
 	p.scores.Item = make(StatScores)
 	p.scores.Entity = make(StatScores)
+
 	return p
 }
 
@@ -150,26 +152,29 @@ func (p *Processor) Flush(pc *cache.PlayerCache) error {
 
 	// Write global stat files.
 	for name, scores := range p.highscores {
-		path := filepath.Join(config.Get().OutputDir, cache.TypeHighscore,
-			fmt.Sprintf("%s.json", name))
+		path := filepath.Join(config.Get().OutputDir, cache.TypeHighscore, fmt.Sprintf("%s.json", name))
 		if err := saveJSON(path, HighscoreEntry{Name: name, Scores: scores}); err != nil {
-			log.Warn().Err(err).Str("stat", name).Msg("failed to write highscore file")
+			log.Error().Err(err).Str("stat", name).Msg("failed to write highscore file")
 		}
 	}
 
-	for _, group := range []struct {
-		typ  string
-		data StatScores
-	}{
-		{cache.TypeBlock, p.scores.Block},
-		{cache.TypeItem, p.scores.Item},
-		{cache.TypeEntity, p.scores.Entity},
-	} {
-		for name, actionScores := range group.data {
-			path := filepath.Join(config.Get().OutputDir, group.typ,
-				fmt.Sprintf("%s.json", name))
-			if err := saveJSON(path, StatEntry{Name: name, Type: group.typ, Scores: actionScores}); err != nil {
-				log.Warn().Err(err).Str("type", group.typ).Str("stat", name).Msg("failed to write stat file")
+	cats := map[string]StatScores{
+		cache.TypeBlock:  p.scores.Block,
+		cache.TypeItem:   p.scores.Item,
+		cache.TypeEntity: p.scores.Entity,
+	}
+
+	for category, data := range cats {
+		for name, statsScores := range data {
+			outFile := filepath.Join(config.Get().OutputDir, category, fmt.Sprintf("%s.json", name))
+			statsEntry := StatEntry{
+				Name:   name,
+				Type:   category,
+				Scores: statsScores,
+			}
+
+			if err := saveJSON(outFile, statsEntry); err != nil {
+				log.Error().Err(err).Str("category", category).Str("stat", name).Msg("failed to write stat file")
 			}
 		}
 	}
@@ -245,9 +250,11 @@ func (p *Processor) processStatEntry(player *Player, action, stat string, count 
 		if (*t.scores)[stat] == nil {
 			(*t.scores)[stat] = make(ActionScores)
 		}
+
 		if (*t.scores)[stat][action] == nil {
 			(*t.scores)[stat][action] = make(ScoreList)
 		}
+
 		(*t.scores)[stat][action][count] = append((*t.scores)[stat][action][count], player.UUID)
 		trimScoreList((*t.scores)[stat][action], config.Get().NumHighscores)
 
@@ -256,11 +263,12 @@ func (p *Processor) processStatEntry(player *Player, action, stat string, count 
 		if playerCat[action] == nil {
 			playerCat[action] = make(ScoreList)
 		}
+
 		playerCat[action][count] = append(playerCat[action][count], stat)
 		trimScoreList(playerCat[action], config.Get().NumPlayerHighscores)
 
 		// Track that this UUID appears in at least one ranking.
-		p.rankedUUIDs[player.UUID] = struct{}{}
+		p.rankedUUIDs = append(p.rankedUUIDs, player.UUID)
 	}
 }
 
@@ -294,7 +302,7 @@ func (p *Processor) setMedals(player *Player) {
 	for _, scoreList := range p.highscores {
 		for rank, key := range sortedKeys(scoreList) {
 			if rank >= 3 {
-				break // only gold/silver/bronze
+				break // only first 3 (gold/silver/bronze)
 			}
 
 			for _, name := range scoreList[key] {
@@ -317,7 +325,7 @@ func (p *Processor) setMedals(player *Player) {
 // meetsPlaytimeRequirement returns true if the player has enough playtime,
 // or already appears in any score ranking.
 func (p *Processor) meetsPlaytimeRequirement(player *Player) bool {
-	if _, ranked := p.rankedUUIDs[player.UUID]; ranked {
+	if slices.Contains(p.rankedUUIDs, player.UUID) {
 		return true
 	}
 

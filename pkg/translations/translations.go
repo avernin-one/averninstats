@@ -35,12 +35,6 @@ type assetIndex struct {
 	} `json:"objects"`
 }
 
-// i18nManifest is written to i18n/_manifest.json so the frontend knows
-// which language files are available without needing a directory listing.
-type i18nManifest struct {
-	Languages []string `json:"languages"`
-}
-
 var (
 	// populateRe classifies a raw Mojang key into block/item/entity/stat.
 	populateRe = regexp.MustCompile(`^(block|item|entity|stat)(\.minecraft)?\.`)
@@ -122,11 +116,11 @@ func Run() (*cache.Lookup, error) {
 	sort.Strings(languages)
 
 	if err := l.Save(); err != nil {
-		log.Warn().Err(err).Msg("failed to persist lookup cache")
+		log.Error().Err(err).Msg("failed to persist lookup cache")
 	}
 
 	if err := writeManifest(languages); err != nil {
-		log.Warn().Err(err).Msg("failed to write i18n manifest")
+		log.Error().Err(err).Msg("failed to write i18n manifest")
 	}
 
 	return l, nil
@@ -179,6 +173,7 @@ func downloadRaw(name, hash string) (map[string]string, error) {
 func writeProcessed(name string, raw map[string]string) error {
 	outPath := filepath.Join(config.Get().I18nDir(), fmt.Sprintf("%s.json", name))
 	processed := stripTranslations(raw)
+
 	if err := utils.SaveJSONFile(outPath, processed); err != nil {
 		return fmt.Errorf("save %s: %w", name, err)
 	}
@@ -189,7 +184,7 @@ func writeProcessed(name string, raw map[string]string) error {
 // writeManifest writes i18n/_manifest.json listing all available languages.
 func writeManifest(languages []string) error {
 	path := filepath.Join(config.Get().I18nDir(), "_manifest.json")
-	return utils.SaveJSONFile(path, i18nManifest{Languages: languages})
+	return utils.SaveJSONFile(path, languages)
 }
 
 // ---------------------------------------------------------------------------

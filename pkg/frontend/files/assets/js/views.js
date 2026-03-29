@@ -137,7 +137,7 @@ export async function renderHighscores() {
   const content = document.querySelector("#stat-content .main-inner");
   const tocItems = [];
 
-  for (const name of manifest.stats) {
+  for (const name of manifest) {
     let data;
     try {
       data = await fetchJSON(`highscore/${name}.json`);
@@ -188,7 +188,7 @@ export async function renderStatList(category) {
 
   render(Mustache.render(T.get("page-stat-list"), {}));
 
-  const tocItems = manifest.stats
+  const tocItems = manifest
     .map((name) => ({
       label: translate(name),
       href: `#/${category}/${name}`,
@@ -298,7 +298,7 @@ export async function renderPlayerList() {
 
   render(Mustache.render(T.get("page-players"), {}));
 
-  const players = manifest.players
+  const players = manifest
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
     .map((name) => ({
       name,

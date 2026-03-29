@@ -1,11 +1,8 @@
 package cache
 
 import (
-	"encoding/json"
 	"fmt"
 	"image"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/avernin-one/averninstats/pkg/config"
@@ -26,34 +23,28 @@ type CachedPlayer struct {
 }
 
 // PlayerCache manages the persisted list of resolved players.
-type PlayerCache struct {
-	Players  []*CachedPlayer `json:"players"`
-	filePath string
-}
+type PlayerCache []*CachedPlayer
 
 // NewPlayerCache loads the player cache from disk. Returns an empty cache
 // (without error) if the file does not exist yet.
 func NewPlayerCache() *PlayerCache {
 	pc := &PlayerCache{}
 
-	data, err := os.ReadFile(pc.filePath)
-	if err != nil {
-		log.Warn().Str("path", pc.filePath).Msg("player cache not found, starting empty")
+	if err := utils.ReadJSONFile(PlayerCacheFile(), pc); err != nil {
+		log.Warn().Str("path", PlayerCacheFile()).Msg("player cache not found, starting empty")
 		return pc
 	}
 
-	if err := json.Unmarshal(data, pc); err != nil {
-		log.Error().Err(err).Msg("failed to decode player cache, starting empty")
-		return &PlayerCache{filePath: pc.filePath}
-	}
+	log.Info().Str("path", PlayerCacheFile()).Int("players", len(*pc)).Msg("player cache loaded")
 
-	log.Info().Str("path", pc.filePath).Int("players", len(pc.Players)).Msg("player cache loaded")
 	return pc
 }
 
 // SaveToFile persists the cache to disk.
-func (pc *PlayerCache) Save() error {
-	return utils.SaveJSONFile(pc.filePath, pc)
+func (pc *PlayerCache) Save() {
+	if err := utils.SaveJSONFile(PlayerCacheFile(), pc); err != nil {
+		log.Error().Err(err).Str("path", PlayerCacheFile()).Msg("failed to save player cache")
+	}
 }
 
 // GetOrFetch returns the cached entry for uuid, fetching from the Mojang API
@@ -66,8 +57,11 @@ func (pc *PlayerCache) GetOrFetch(uuid string) (*CachedPlayer, error) {
 		if err != nil {
 			return nil, err
 		}
-		pc.Players = append(pc.Players, fetched)
+
+		*pc = append(*pc, fetched)
+
 		log.Info().Str("name", fetched.Name).Str("uuid", uuid).Msg("new player added to cache")
+
 		return fetched, nil
 	}
 
@@ -104,7 +98,7 @@ func (pc *PlayerCache) EnsureSkin(p *CachedPlayer) {
 }
 
 func (pc *PlayerCache) findByUUID(uuid string) *CachedPlayer {
-	for _, p := range pc.Players {
+	for _, p := range *pc {
 		if p.UUID == uuid {
 			return p
 		}
@@ -150,9 +144,4 @@ func (pc *PlayerCache) refresh(p *CachedPlayer) error {
 	p.LastCheck = utils.AddRandomTime(time.Now(), config.Get().LastCheckJitter)
 	log.Info().Str("name", p.Name).Msg("player cache entry refreshed")
 	return nil
-}
-
-// dirOf returns the directory part of a file path.
-func dirOf(path string) string {
-	return filepath.Dir(path)
 }

@@ -34,9 +34,7 @@ type PlayerCache struct {
 // NewPlayerCache loads the player cache from disk. Returns an empty cache
 // (without error) if the file does not exist yet.
 func NewPlayerCache() *PlayerCache {
-	pc := &PlayerCache{
-		filePath: config.Get().PlayerCachePath(),
-	}
+	pc := &PlayerCache{}
 
 	data, err := os.ReadFile(pc.filePath)
 	if err != nil {
@@ -54,19 +52,8 @@ func NewPlayerCache() *PlayerCache {
 }
 
 // SaveToFile persists the cache to disk.
-func (pc *PlayerCache) SaveToFile() error {
-	if err := os.MkdirAll(filepath.Dir(pc.filePath), 0o775); err != nil {
-		return fmt.Errorf("create cache dir: %w", err)
-	}
-	data, err := json.MarshalIndent(pc, "", "  ")
-	if err != nil {
-		return fmt.Errorf("encode player cache: %w", err)
-	}
-	if err := os.WriteFile(pc.filePath, data, 0o664); err != nil {
-		return fmt.Errorf("write player cache: %w", err)
-	}
-	log.Info().Str("path", pc.filePath).Int("players", len(pc.Players)).Msg("player cache saved")
-	return nil
+func (pc *PlayerCache) Save() error {
+	return utils.SaveJSONFile(pc.filePath, pc)
 }
 
 // GetOrFetch returns the cached entry for uuid, fetching from the Mojang API

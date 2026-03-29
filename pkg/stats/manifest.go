@@ -14,6 +14,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const manifestFileName = "_manifest.json"
+
 // WriteManifests writes _manifest.json files into each category output directory.
 // Must be called after Flush so all JSON files are already written.
 func (p *Processor) WriteManifests() {
@@ -23,7 +25,7 @@ func (p *Processor) WriteManifests() {
 }
 
 func (p *Processor) writeHighscoreManifest() {
-	outFile := filepath.Join(config.Get().OutputDir, cache.TypeHighscore, "_manifest.json")
+	outFile := filepath.Join(config.Get().OutputDir, cache.TypeHighscore, manifestFileName)
 
 	names := make([]string, 0, len(p.highscores))
 	for name := range p.highscores {
@@ -45,7 +47,7 @@ func (p *Processor) writeStatsManifest() {
 	}
 
 	for category, data := range cats {
-		outFile := filepath.Join(config.Get().OutputDir, category, "_manifest.json")
+		outFile := filepath.Join(config.Get().OutputDir, category, manifestFileName)
 
 		names := make([]string, 0, len(data))
 		for name := range data {
@@ -61,7 +63,7 @@ func (p *Processor) writeStatsManifest() {
 }
 
 func (p *Processor) writePlayerManifest() {
-	outFile := filepath.Join(config.Get().OutputDir, cache.TypePlayer, "_manifest.json")
+	outFile := filepath.Join(config.Get().OutputDir, cache.TypePlayer, manifestFileName)
 
 	names := make([]string, 0, len(p.players))
 	for _, player := range p.players {

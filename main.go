@@ -48,6 +48,7 @@ func main() {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
 			continue
 		}
+
 		current++
 		uuid := strings.TrimSuffix(entry.Name(), ".json")
 		path := filepath.Join(cfg.StatsSourceDir, entry.Name())
@@ -73,7 +74,7 @@ func main() {
 	}
 
 	// Persist updated player cache.
-	if err := playerCache.SaveToFile(); err != nil {
+	if err := playerCache.Save(); err != nil {
 		log.Warn().Err(err).Msg("failed to save player cache")
 	}
 

@@ -79,6 +79,7 @@ func New(l *cache.Lookup) *Processor {
 		highscores:  make(map[string]ScoreList),
 		rankedUUIDs: make(map[string]struct{}),
 	}
+
 	p.scores.Block = make(StatScores)
 	p.scores.Item = make(StatScores)
 	p.scores.Entity = make(StatScores)
@@ -295,7 +296,7 @@ func (p *Processor) setMedals(player *Player) {
 			if rank >= 3 {
 				break // only gold/silver/bronze
 			}
-			
+
 			for _, name := range scoreList[key] {
 				if name != player.Name {
 					continue

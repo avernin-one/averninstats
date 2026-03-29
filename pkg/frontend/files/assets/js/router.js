@@ -33,28 +33,28 @@ export function currentPath() {
   return hash || "/highscores";
 }
 
-// Starts the router: dispatches the current hash and listens for changes.
-export function start() {
-  function dispatch() {
-    const path = currentPath();
+export function dispatch() {
+  const path = currentPath();
 
-    for (const route of routes) {
-      const match = route.regex.exec(path);
+  for (const route of routes) {
+    const match = route.regex.exec(path);
 
-      if (match) {
-        const params = {};
-        route.keys.forEach((key, i) => {
-          params[key] = decodeURIComponent(match[i + 1]);
-        });
-        route.handler(params);
-        return;
-      }
+    if (match) {
+      const params = {};
+      route.keys.forEach((key, i) => {
+        params[key] = decodeURIComponent(match[i + 1]);
+      });
+      route.handler(params);
+      return;
     }
-
-    // No route matched - fall back to highscores.
-    navigate("/highscores");
   }
 
+  // No route matched - fall back to highscores.
+  navigate("/highscores");
+}
+
+// Starts the router: dispatches the current hash and listens for changes.
+export function start() {
   globalThis.addEventListener("hashchange", dispatch);
   dispatch();
 }

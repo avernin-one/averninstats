@@ -126,7 +126,12 @@ func SaveBody(img image.Image, outputDir, playerName, playerModel string) {
 		return
 	}
 
-	rendered := skin.RenderBody(nrgba, skin.Options{Scale: 10, Overlay: true, Slim: playerModel == "slim", Square: false})
+	rendered := skin.RenderBody(nrgba, skin.Options{
+		Scale:   10,
+		Overlay: true,
+		Slim:    playerModel == "slim",
+		Square:  false,
+	})
 	if err := saveImage(rendered, path); err != nil {
 		log.Warn().Str("player", playerName).Err(err).Msg("unable to save body image")
 		return

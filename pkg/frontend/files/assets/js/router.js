@@ -39,7 +39,7 @@ export function start() {
     const path = currentPath();
 
     for (const route of routes) {
-      const match = path.match(route.regex);
+      const match = route.regex.exec(path);
 
       if (match) {
         const params = {};

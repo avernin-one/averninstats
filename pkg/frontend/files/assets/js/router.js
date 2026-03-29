@@ -24,12 +24,12 @@ export function on(pattern, handler) {
 
 // Navigates to a new hash route without reloading the page.
 export function navigate(path) {
-  window.location.hash = path;
+  globalThis.location.hash = path;
 }
 
 // Returns the current route path, stripping the leading #.
 export function currentPath() {
-  const hash = window.location.hash.replace(/^#/, "");
+  const hash = globalThis.location.hash.replace(/^#/, "");
   return hash || "/highscores";
 }
 
@@ -55,6 +55,6 @@ export function start() {
     navigate("/highscores");
   }
 
-  window.addEventListener("hashchange", dispatch);
+  globalThis.addEventListener("hashchange", dispatch);
   dispatch();
 }

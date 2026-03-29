@@ -73,8 +73,8 @@ export function formatTicks(ticks) {
 // Converts a snake_case or kebab-case key to Title Case.
 export function titleCase(key) {
   return String(key)
-    .replace(/[-_]/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+    .replaceAll(/[-_]/g, " ")
+    .replaceAll(/\b\w/g, (c) => c.toUpperCase());
 }
 
 // ---------------------------------------------------------------------------

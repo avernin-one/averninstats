@@ -5,15 +5,13 @@ package stats
 // which stat/player JSON files exist.
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 
 	"github.com/avernin-one/averninstats/pkg/cache"
 	"github.com/avernin-one/averninstats/pkg/config"
-	"github.com/rs/zerolog/log"
+	"github.com/avernin-one/averninstats/pkg/utils"
 )
 
 // highscoreManifest lists all stat names present in the highscore directory.
@@ -55,7 +53,7 @@ func (p *Processor) writeHighscoreManifest() error {
 
 	sort.Strings(names)
 
-	return writeManifestJSON(
+	return utils.SaveJSONFile(
 		filepath.Join(config.Get().OutputDir, cache.TypeHighscore, "_manifest.json"),
 		highscoreManifest{Stats: names},
 	)
@@ -81,7 +79,7 @@ func (p *Processor) writeStatManifest(category string) error {
 
 	sort.Strings(names)
 
-	return writeManifestJSON(
+	return utils.SaveJSONFile(
 		filepath.Join(config.Get().OutputDir, category, "_manifest.json"),
 		statManifest{Stats: names},
 	)
@@ -97,27 +95,8 @@ func (p *Processor) writePlayerManifest() error {
 
 	sort.Strings(names)
 
-	return writeManifestJSON(
+	return utils.SaveJSONFile(
 		filepath.Join(config.Get().OutputDir, cache.TypePlayer, "_manifest.json"),
 		playerManifest{Players: names},
 	)
-}
-
-func writeManifestJSON(path string, v any) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o775); err != nil {
-		return fmt.Errorf("create dir for manifest: %w", err)
-	}
-
-	data, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return fmt.Errorf("encode manifest: %w", err)
-	}
-
-	if err := os.WriteFile(path, data, 0o664); err != nil {
-		return fmt.Errorf("write manifest %q: %w", path, err)
-	}
-
-	log.Debug().Str("path", path).Msg("manifest saved")
-
-	return nil
 }

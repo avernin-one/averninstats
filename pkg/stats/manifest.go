@@ -5,47 +5,26 @@ package stats
 // which stat/player JSON files exist.
 
 import (
-	"fmt"
 	"path/filepath"
 	"sort"
 
 	"github.com/avernin-one/averninstats/pkg/cache"
 	"github.com/avernin-one/averninstats/pkg/config"
 	"github.com/avernin-one/averninstats/pkg/utils"
+	"github.com/rs/zerolog/log"
 )
-
-// highscoreManifest lists all stat names present in the highscore directory.
-type highscoreManifest struct {
-	Stats []string `json:"stats"`
-}
-
-// statManifest lists all stat names for blocks/items/entities.
-type statManifest struct {
-	Stats []string `json:"stats"`
-}
-
-// playerManifest lists all player names.
-type playerManifest struct {
-	Players []string `json:"players"`
-}
 
 // WriteManifests writes _manifest.json files into each category output directory.
 // Must be called after Flush so all JSON files are already written.
-func (p *Processor) WriteManifests() error {
-	if err := p.writeHighscoreManifest(); err != nil {
-		return err
-	}
-
-	for _, cat := range []string{cache.TypeBlock, cache.TypeItem, cache.TypeEntity} {
-		if err := p.writeStatManifest(cat); err != nil {
-			return err
-		}
-	}
-
-	return p.writePlayerManifest()
+func (p *Processor) WriteManifests() {
+	p.writeHighscoreManifest()
+	p.writePlayerManifest()
+	p.writeStatsManifest()
 }
 
-func (p *Processor) writeHighscoreManifest() error {
+func (p *Processor) writeHighscoreManifest() {
+	outFile := filepath.Join(config.Get().OutputDir, cache.TypeHighscore, "_manifest.json")
+
 	names := make([]string, 0, len(p.highscores))
 	for name := range p.highscores {
 		names = append(names, name)
@@ -53,39 +32,37 @@ func (p *Processor) writeHighscoreManifest() error {
 
 	sort.Strings(names)
 
-	return utils.SaveJSONFile(
-		filepath.Join(config.Get().OutputDir, cache.TypeHighscore, "_manifest.json"),
-		highscoreManifest{Stats: names},
-	)
+	if err := utils.SaveJSONFile(outFile, names); err != nil {
+		log.Error().Err(err).Str("category", cache.TypeHighscore).Msg("failed to write highscore manifest file")
+	}
 }
 
-func (p *Processor) writeStatManifest(category string) error {
-	var data StatScores
-	switch category {
-	case cache.TypeBlock:
-		data = p.scores.Block
-	case cache.TypeItem:
-		data = p.scores.Item
-	case cache.TypeEntity:
-		data = p.scores.Entity
-	default:
-		return fmt.Errorf("unknown category %q", category)
+func (p *Processor) writeStatsManifest() {
+	cats := map[string]StatScores{
+		cache.TypeBlock:  p.scores.Block,
+		cache.TypeItem:   p.scores.Item,
+		cache.TypeEntity: p.scores.Entity,
 	}
 
-	names := make([]string, 0, len(data))
-	for name := range data {
-		names = append(names, name)
+	for category, data := range cats {
+		outFile := filepath.Join(config.Get().OutputDir, category, "_manifest.json")
+
+		names := make([]string, 0, len(data))
+		for name := range data {
+			names = append(names, name)
+		}
+
+		sort.Strings(names)
+
+		if err := utils.SaveJSONFile(outFile, names); err != nil {
+			log.Error().Err(err).Str("category", category).Msg("failed to write manifest file")
+		}
 	}
-
-	sort.Strings(names)
-
-	return utils.SaveJSONFile(
-		filepath.Join(config.Get().OutputDir, category, "_manifest.json"),
-		statManifest{Stats: names},
-	)
 }
 
-func (p *Processor) writePlayerManifest() error {
+func (p *Processor) writePlayerManifest() {
+	outFile := filepath.Join(config.Get().OutputDir, cache.TypePlayer, "_manifest.json")
+
 	names := make([]string, 0, len(p.players))
 	for _, player := range p.players {
 		if player.Name != "" {
@@ -95,8 +72,7 @@ func (p *Processor) writePlayerManifest() error {
 
 	sort.Strings(names)
 
-	return utils.SaveJSONFile(
-		filepath.Join(config.Get().OutputDir, cache.TypePlayer, "_manifest.json"),
-		playerManifest{Players: names},
-	)
+	if err := utils.SaveJSONFile(outFile, names); err != nil {
+		log.Error().Err(err).Str("category", cache.TypePlayer).Msg("failed to write player manifest file")
+	}
 }

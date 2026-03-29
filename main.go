@@ -71,14 +71,9 @@ func main() {
 		log.Fatal().Err(err).Msg("failed to flush output")
 	}
 
-	if err := proc.WriteManifests(); err != nil {
-		log.Warn().Err(err).Msg("failed to write manifests")
-	}
+	proc.WriteManifests()
 
-	// Persist updated player cache.
-	if err := playerCache.Save(); err != nil {
-		log.Warn().Err(err).Msg("failed to save player cache")
-	}
+	playerCache.Save()
 
 	log.Info().TimeDiff("duration", time.Now(), start).Msg("finished")
 }

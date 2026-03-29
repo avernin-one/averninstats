@@ -24,7 +24,6 @@ import (
 	"image"
 	"image/draw"
 	"image/png"
-	_ "image/png"
 	"io"
 	"log"
 	"net/http"

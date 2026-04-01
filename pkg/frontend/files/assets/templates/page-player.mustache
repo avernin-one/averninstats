@@ -1,0 +1,8 @@
+<div id="player-grid" class="player-grid">
+{{#players}}
+<a href="{{href}}" class="player-card">
+  <img src="/assets/images/player/head_{{name}}.png" alt="{{name}}" class="player-card-head" onerror="this.style.visibility='hidden'">
+  <span class="player-card-name">{{name}}</span>
+</a>
+{{/players}}
+</div>

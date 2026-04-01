@@ -1,0 +1,44 @@
+<div class="player-profile">
+  <div class="player-header">
+    <img src="/assets/images/player/body_{{name}}.png" alt="{{name}}" class="body-img" onerror="this.style.display='none'">
+    <div class="player-meta">
+      <h2>{{name}}</h2>
+      <div class="medals">
+        <span class="medal gold" title="Gold medals">🥇 {{medals.gold}}</span>
+        <span class="medal silver" title="Silver medals">🥈 {{medals.silver}}</span>
+        <span class="medal bronze" title="Bronze medals">🥉 {{medals.bronze}}</span>
+      </div>
+    </div>
+  </div>
+
+  <h3>Statistics</h3>
+  <table class="score-table stats-table">
+    <thead><tr><th>Statistic</th><th>Count</th></tr></thead>
+    <tbody>
+      {{#stats}}
+      <tr>
+        <td>{{key}}</td>
+        <td class="score">{{value}}</td>
+      </tr>
+      {{/stats}}
+    </tbody>
+  </table>
+
+  {{#scores}}
+  <h3>{{category}}</h3>
+  {{#actions}}
+  <table class="score-table">
+    <thead><tr><th>#</th><th>{{action}}</th><th>Count</th></tr></thead>
+    <tbody>
+      {{#scores}}
+      <tr>
+        <td class="rank">{{index}}</td>
+        <td>{{name}}</td>
+        <td class="score">{{score}}</td>
+      </tr>
+      {{/scores}}
+    </tbody>
+  </table>
+  {{/actions}}
+  {{/scores}}
+</div>

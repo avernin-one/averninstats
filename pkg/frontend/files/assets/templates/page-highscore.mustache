@@ -1,0 +1,32 @@
+<div class="stat-detail" data-id="highscore">
+    {{#sections}}
+    <section class="stat-section" id="{{id}}">
+        <h3>{{name}}</h3>
+        <table class="score-table">
+            <thead>
+                <tr>
+                <th>#</th>
+                <th>Player</th>
+                <th>Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#scores}}
+                <tr>
+                <td class="rank">{{rank}}</td>
+                <td class="player-cell">
+                    {{#players}}
+                    <a href="#/player/{{.}}" class="player-link">
+                    <img src="/assets/images/player/head_{{.}}.png" alt="{{.}}" class="head-img" onerror="this.style.display='none'">
+                    {{.}}
+                    </a>
+                    {{/players}}
+                </td>
+                <td class="score">{{score}}</td>
+                </tr>
+                {{/scores}}
+            </tbody>
+        </table>
+    </section>
+    {{/sections}}
+</div>

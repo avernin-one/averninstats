@@ -4,18 +4,15 @@
 const BASE = "assets/templates/";
 
 const TEMPLATE_FILES = [
-  "highscore-section",
+  "error",
+  "loading",
+  "page-highscore",
+  "page-stats",
+  "page-player",
+  "page-player-profile",
   "toc-link",
   "toc-list",
   "toc-loading",
-  "page-highscores",
-  "page-stat-list",
-  "stat-detail",
-  "page-players",
-  "player-card",
-  "player-profile",
-  "loading",
-  "error",
 ];
 
 // Cache: template name -> template string
@@ -46,5 +43,6 @@ export function get(name) {
     const available = [..._cache.keys()].join(", ");
     throw new Error(`Template "${name}" not loaded. Available: ${available}`);
   }
+
   return _cache.get(name);
 }

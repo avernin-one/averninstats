@@ -30,7 +30,7 @@ export function navigate(path) {
 // Returns the current route path, stripping the leading #.
 export function currentPath() {
   const hash = globalThis.location.hash.replace(/^#/, "");
-  return hash || "/highscores";
+  return hash || "/highscore";
 }
 
 export function dispatch() {
@@ -50,7 +50,7 @@ export function dispatch() {
   }
 
   // No route matched - fall back to highscores.
-  navigate("/highscores");
+  navigate("/highscore");
 }
 
 // Starts the router: dispatches the current hash and listens for changes.

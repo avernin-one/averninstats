@@ -2,18 +2,17 @@
 "use strict";
 
 import Mustache from "https://unpkg.com/mustache@4.2.0/mustache.mjs";
-import {
-  fetchJSON,
-  flattenScoreList,
-  flattenActionScores,
-  formatValue,
-  headImgPath,
-  bodyImgPath,
-  titleCase,
-} from "./utils.js";
+import { fetchJSON, formatValue, titleCase } from "./utils.js";
 import { translate } from "./i18n.js";
 import * as T from "./templates.js";
 import { alignTables } from "./align-tables.js";
+
+const SCROLL_OPTIONS = {
+  behavior: "smooth",
+  block: "center",
+};
+
+let tocs = [];
 
 // Waits for the browser to paint before measuring table widths.
 function scheduleAlign(scope) {
@@ -24,10 +23,33 @@ function scheduleAlign(scope) {
 // Page-level helpers
 // ---------------------------------------------------------------------------
 
-function setActiveNav(section) {
+function setActiveNav(id) {
   const links = document.querySelectorAll(".nav-link");
   for (const link of links) {
-    link.classList.toggle("active", link.dataset.section === section);
+    link.classList.toggle("active", link.dataset.id === id);
+  }
+}
+
+function setActiveToc(id) {
+  const links = document.querySelectorAll(".toc-link");
+  for (const link of links) {
+    let isActive = link.classList.toggle("active", link.dataset.id === id);
+    if (isActive) {
+      link.scrollIntoView(SCROLL_OPTIONS);
+    }
+  }
+}
+
+function scrollToSection(id) {
+  const topNav = document.querySelector("nav.topnav");
+  const main = document.querySelector("main");
+  const section = document.getElementById(id);
+
+  let offset = topNav.offsetHeight + main.style.paddingBottom;
+
+  if (section) {
+    section.style.scrollMarginTop = `${offset}px`;
+    section.scrollIntoView(SCROLL_OPTIONS);
   }
 }
 
@@ -36,7 +58,7 @@ function setTitle(page) {
 }
 
 function render(html) {
-  document.getElementById("app").innerHTML = html;
+  document.getElementById("main").innerHTML = html;
 }
 
 function renderLoading() {
@@ -47,348 +69,213 @@ function renderError(message) {
   render(Mustache.render(T.get("error"), { message }));
 }
 
-// ---------------------------------------------------------------------------
-// TOC helpers
-// ---------------------------------------------------------------------------
+async function renderToc(category, doTranslate = true) {
+  const toc = document.getElementById("toc-list");
 
-// Replaces the TOC list with a loading spinner.
-function showTocSpinner() {
-  const list = document.getElementById("toc-list");
-  if (list) {
-    list.innerHTML = Mustache.render(T.get("toc-loading"), {});
-  }
-}
-
-// Renders the TOC list and wires up the search input.
-// Items with hrefs not starting with "#/" are treated as scroll anchors
-// and get a click handler instead of hash navigation.
-function buildToc(items) {
-  const list = document.getElementById("toc-list");
-  if (!list) {
-    return;
-  }
-
-  function paint(filter) {
-    const lc = filter ? filter.toLowerCase() : "";
-
-    const filtered = lc
-      ? items.filter((item) => item.label.toLowerCase().includes(lc))
-      : items;
-
-    list.innerHTML = Mustache.render(T.get("toc-list"), { items: filtered });
-
-    // Attach scroll handlers to anchor links (e.g. highscore section jumps).
-    for (const link of list.querySelectorAll(".toc-link")) {
-      const href = link.getAttribute("href");
-
-      if (href && !href.startsWith("#/")) {
-        link.addEventListener("click", (e) => {
-          e.preventDefault();
-          const id = href.replace(/^#/, "");
-          const target = document.getElementById(id);
-          if (target) {
-            target.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        });
-      }
-    }
-  }
-
-  paint("");
-
-  const searchInput = document.getElementById("toc-search");
-  if (searchInput) {
-    searchInput.value = "";
-    searchInput.addEventListener("input", (e) => paint(e.target.value));
-  }
-}
-
-// Marks the active TOC link and scrolls it into view.
-function setActiveTocLink(href) {
-  for (const link of document.querySelectorAll(".toc-link")) {
-    link.classList.toggle("toc-active", link.getAttribute("href") === href);
-  }
-  const active = document.querySelector(".toc-link.toc-active");
-  if (active) {
-    active.scrollIntoView({ block: "nearest" });
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Highscores
-// ---------------------------------------------------------------------------
-
-export async function renderHighscores() {
-  setActiveNav("highscores");
-  setTitle("Highscores");
-  renderLoading();
-  showTocSpinner();
-
-  let manifest;
-  try {
-    manifest = await fetchJSON("highscore/_manifest.json");
-  } catch {
-    renderError("Could not load highscore index.");
-    return;
-  }
-
-  render(Mustache.render(T.get("page-highscores"), {}));
-
-  const content = document.querySelector("#stat-content .main-inner");
-  const tocItems = [];
-
-  for (const name of manifest) {
-    let data;
+  // Load manifest if not cached
+  if (!tocs[category]) {
     try {
-      data = await fetchJSON(`highscore/${name}.json`);
-    } catch {
-      continue;
+      const manifest = await fetchJSON(`${category}/_manifest.json`);
+      const tocItems = manifest
+        .map((name) => ({
+          id: name,
+          name: doTranslate ? translate(name) : name,
+          href: `#/${category}/${name}`,
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      tocs[category] = tocItems;
+    } catch (err) {
+      renderError(`Could not load ${category} manifest.`);
+      console.error(err);
+      return;
     }
+  }
 
-    const label = translate(data.name);
-    const entries = flattenScoreList(data.scores).map((entry, index) => ({
-      rank: index + 1,
-      name: entry.name,
-      headImg: headImgPath(entry.name),
-      displayValue: formatValue(data.name, entry.score),
-    }));
+  // Update TOC if category changed or not rendered yet
+  if (toc.dataset.id != category) {
+    toc.dataset.id = category;
+    toc.innerHTML = Mustache.render(T.get("toc-list"), tocs[category]);
+  }
 
-    if (entries.length === 0) {
-      continue;
-    }
-
-    tocItems.push({ label, href: `#${data.name}` });
-    content.insertAdjacentHTML(
-      "beforeend",
-      Mustache.render(T.get("highscore-section"), {
-        anchor: data.name,
-        label,
-        entries,
-      }),
+  // Attach search event listener
+  const searchInput = document.getElementById("toc-search");
+  searchInput.value = "";
+  searchInput.addEventListener("input", () => {
+    const query = searchInput.value.toLowerCase();
+    const filteredItems = tocs[category].filter((item) =>
+      item.name.toLowerCase().includes(query),
     );
-  }
+    toc.innerHTML = Mustache.render(T.get("toc-list"), filteredItems);
+  });
 
-  buildToc(tocItems);
-  scheduleAlign(".main-inner");
+  return tocs[category];
 }
 
-export async function renderStatList(category) {
+// ---------------------------------------------------------------------------
+// Highscore
+// ---------------------------------------------------------------------------
+export async function renderHighscore(stat = null) {
+  setTitle("Highscore");
+  setActiveNav("highscore");
+
+  let manifest = await renderToc("highscore");
+  let site = document.querySelector(`.stat-detail[data-id="highscore"]`);
+
+  if (site == null) {
+    renderLoading();
+
+    const sections = [];
+    for (const name of manifest) {
+      let data;
+      try {
+        data = await fetchJSON(`highscore/${name.id}.json`);
+
+        data.scores = Object.entries(data.scores)
+          .sort(([a], [b]) => Number(b) - Number(a))
+          .map(([score, players], index) => ({
+            rank: index + 1,
+            score: formatValue(data.name, score),
+            players: players,
+          }));
+
+        data.id = data.name;
+        data.name = translate(name.id);
+      } catch (err) {
+        console.error(`Failed to fetch highscore data for ${name.id}:`, err);
+        continue;
+      }
+
+      sections.push(data);
+    }
+
+    render(Mustache.render(T.get("page-highscore"), { sections }));
+    scheduleAlign(".stat-detail");
+  }
+
+  let url = `#/highscore`;
+  if (stat) {
+    setActiveToc(stat);
+    url = `#/highscore/${stat}`;
+  }
+
+  scrollToSection(stat ?? manifest[0].id);
+
+  globalThis.history.replaceState(this, "", url);
+}
+
+// ---------------------------------------------------------------------------
+// Stats
+// ---------------------------------------------------------------------------
+export async function renderStats(category, statName) {
+  let manifest = await renderToc(category);
+
+  if (statName == null) {
+    statName = manifest[0].id;
+  }
+
+  setTitle(`${titleCase(category)} - ${translate(statName)}`);
   setActiveNav(category);
-  setTitle(titleCase(category));
+  setActiveToc(statName);
+
   renderLoading();
-  showTocSpinner();
 
-  let manifest;
-  try {
-    manifest = await fetchJSON(`${category}/_manifest.json`);
-  } catch {
-    renderError(`Could not load ${category} index.`);
-    return;
-  }
-
-  render(Mustache.render(T.get("page-stat-list"), {}));
-
-  const tocItems = manifest
-    .map((name) => ({
-      label: translate(name),
-      href: `#/${category}/${name}`,
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label));
-
-  buildToc(tocItems);
-}
-
-export async function renderStatDetail(category, statName) {
-  setActiveNav(category);
-  setTitle(`${translate(statName)} - ${titleCase(category)}`);
-
-  if (!document.getElementById("stat-content")) {
-    await renderStatList(category);
-  }
-
-  const target = document.querySelector("#stat-content .main-inner");
-  if (!target) {
-    return;
-  }
-
-  target.innerHTML = Mustache.render(T.get("loading"), {});
-
-  let data;
+  let data = {};
   try {
     data = await fetchJSON(`${category}/${statName}.json`);
   } catch {
-    target.innerHTML = Mustache.render(T.get("error"), {
-      message: `Could not load "${translate(statName)}".`,
-    });
+    render(
+      Mustache.render(T.get("error"), {
+        message: `Could not load "${translate(statName)}".`,
+      }),
+    );
     return;
   }
 
-  const sections = flattenActionScores(data.scores, translate)
-    .map(({ label, entries }) => ({
-      label,
-      entries: entries.map((entry, index) => ({
-        rank: index + 1,
-        name: entry.name,
-        headImg: headImgPath(entry.name),
-        displayValue: entry.score.toLocaleString(),
-      })),
-    }))
-    .filter((section) => section.entries.length > 0);
+  let sections = [];
+  for (const elem in data.scores) {
+    let entry = {
+      id: elem,
+      name: translate(elem),
+      scores: Object.entries(data.scores[elem])
+        .sort(([a], [b]) => Number(b) - Number(a))
+        .map(([score, players], index) => ({
+          rank: index + 1,
+          score: formatValue(data.name, score),
+          players: players,
+        })),
+    };
 
-  target.innerHTML = Mustache.render(T.get("stat-detail"), {
-    title: translate(statName),
-    sections,
-  });
+    sections.push(entry);
+  }
 
-  scheduleAlign(".main-inner");
-  setActiveTocLink(`#/${category}/${statName}`);
+  render(
+    Mustache.render(T.get("page-stats"), {
+      title: translate(statName),
+      sections,
+    }),
+  );
+
+  const url = `#/${category}/${statName}`;
+  globalThis.history.replaceState(this, "", url);
 }
 
 // ---------------------------------------------------------------------------
 // Players
 // ---------------------------------------------------------------------------
+export async function renderPlayers(playerName = null) {
+  setActiveNav("player");
 
-// buildTocWithGridSync works like buildToc but also keeps the player grid
-// in sync with the search filter.
-function buildTocWithGridSync(tocItems, grid) {
-  const list = document.getElementById("toc-list");
-  if (!list) {
-    return;
-  }
+  let manifest = await renderToc("player", false);
 
-  function paint(filter) {
-    const lc = filter ? filter.toLowerCase() : "";
+  if (playerName == null) {
+    setTitle("Player");
 
-    const filteredToc = lc
-      ? tocItems.filter((item) => item.label.toLowerCase().includes(lc))
-      : tocItems;
-
-    list.innerHTML = Mustache.render(T.get("toc-list"), { items: filteredToc });
-
-    // Show only matching cards in the grid.
-    const visibleNames = new Set(filteredToc.map((item) => item.label));
-    for (const card of grid.querySelectorAll(".player-card")) {
-      const name = card.querySelector(".player-card-name").textContent;
-      card.style.display = visibleNames.has(name) ? "" : "none";
-    }
-  }
-
-  paint("");
-
-  const searchInput = document.getElementById("toc-search");
-  if (searchInput) {
-    searchInput.value = "";
-    searchInput.addEventListener("input", (e) => paint(e.target.value));
-  }
-}
-
-export async function renderPlayerList() {
-  setActiveNav("players");
-  setTitle("Players");
-  renderLoading();
-  showTocSpinner();
-
-  let manifest;
-  try {
-    manifest = await fetchJSON("player/_manifest.json");
-  } catch {
-    renderError("Could not load player index.");
-    return;
-  }
-
-  render(Mustache.render(T.get("page-players"), {}));
-
-  const players = manifest
-    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
-    .map((name) => ({
-      name,
-      headImg: headImgPath(name),
-      href: `#/player/${name}`,
-    }));
-
-  // Render the player grid into the main area.
-  const grid = document.getElementById("player-grid");
-  for (const player of players) {
-    grid.insertAdjacentHTML(
-      "beforeend",
-      Mustache.render(T.get("player-card"), player),
+    render(
+      Mustache.render(T.get("page-player"), {
+        players: manifest.sort(() => Math.random() - 0.5),
+      }),
     );
-  }
 
-  // Build the TOC. When the search filter changes, also filter the grid.
-  const tocItems = players.map((p) => ({
-    label: p.name,
-    href: `#/player/${p.name}`,
-  }));
-  buildTocWithGridSync(tocItems, grid);
-}
-
-export async function renderPlayerDetail(playerName) {
-  setActiveNav("players");
-  setTitle(`${playerName} - Players`);
-
-  if (!document.getElementById("player-content")) {
-    await renderPlayerList();
-  }
-
-  const content = document.querySelector("#player-content .main-inner");
-  if (!content) {
     return;
   }
 
-  content.innerHTML = Mustache.render(T.get("loading"), {});
+  setTitle(`Player - ${playerName}`);
 
   let data;
   try {
     data = await fetchJSON(`player/${playerName}.json`);
   } catch {
-    content.innerHTML = Mustache.render(T.get("error"), {
-      message: `Player "${playerName}" not found.`,
-    });
+    renderError(`Player "${playerName}" not found.`);
     return;
   }
 
-  // Build the stats table rows.
-  const statsRows = Object.entries(data.stats ?? {})
+  data.stats = Object.entries(data.stats)
     .map(([key, value]) => ({
-      label: translate(key),
-      displayValue: formatValue(key, value),
+      key: translate(key),
+      value: formatValue(key, value),
     }))
-    .sort((a, b) => a.label.localeCompare(b.label));
+    .sort((a, b) => a.key.localeCompare(b.key));
 
-  // Build per-category score sections.
-  const scoreCategories = [];
+  data.scores = Object.entries(data.scores)
+    .map(([cat, actions]) => ({
+      category: translate(cat),
+      actions: Object.entries(actions)
+        .map(([action, scoreList]) => ({
+          action: translate(action),
+          scores: Object.entries(scoreList)
+            .sort(([a], [b]) => Number(b) - Number(a))
+            .map(([score, name], index) => ({
+              index: index + 1,
+              score: formatValue(action, score),
+              name: translate(name),
+            })),
+        }))
+        .sort((a, b) => a.action.localeCompare(b.action)),
+    }))
+    .sort((a, b) => a.category.localeCompare(b.category));
 
-  for (const [cat, actionScores] of Object.entries(data.scores ?? {})) {
-    const categoryLabel = titleCase(cat);
-
-    const actions = flattenActionScores(actionScores, translate)
-      .map(({ label, entries }) => ({
-        label,
-        typeLabel: categoryLabel,
-        entries: entries.map((entry, index) => ({
-          rank: index + 1,
-          name: translate(entry.name),
-          displayValue: entry.score.toLocaleString(),
-        })),
-      }))
-      .filter((action) => action.entries.length > 0);
-
-    if (actions.length > 0) {
-      scoreCategories.push({ categoryLabel, actions });
-    }
-  }
-
-  content.innerHTML = Mustache.render(T.get("player-profile"), {
-    name: data.name,
-    bodyImg: bodyImgPath(data.name),
-    gold: data.medals?.gold || 0,
-    silver: data.medals?.silver || 0,
-    bronze: data.medals?.bronze || 0,
-    statsRows,
-    scoreCategories,
-  });
-
-  scheduleAlign(".main-inner");
-  setActiveTocLink(`#/player/${playerName}`);
+  render(Mustache.render(T.get("page-player-profile"), data));
+  scheduleAlign(".player-profile");
+  setActiveToc(playerName);
 }

@@ -4,15 +4,19 @@
 import { on, start } from "./router.js";
 import { initI18n } from "./i18n.js";
 import { loadTemplates } from "./templates.js";
-import {
-  renderHighscores,
-  renderStatList,
-  renderStatDetail,
-  renderPlayerList,
-  renderPlayerDetail,
-} from "./views.js";
+import { renderStats, renderPlayers, renderHighscore } from "./views.js";
 
 async function bootstrap() {
+  console.log(
+    "%c                                                                        \n" +
+      "                                ▀▀               ██         ██          \n" +
+      "   ▀▀█▄ ██ ██ ▄█▀█▄ ████▄ ████▄ ██  ████▄ ▄█▀▀▀ ▀██▀▀ ▀▀█▄ ▀██▀▀ ▄█▀▀▀  \n" +
+      "  ▄█▀██ ██▄██ ██▄█▀ ██ ▀▀ ██ ██ ██  ██ ██ ▀███▄  ██  ▄█▀██  ██   ▀███▄  \n" +
+      "  ▀█▄██  ▀█▀  ▀█▄▄▄ ██    ██ ██ ██▄ ██ ██ ▄▄▄█▀  ██  ▀█▄██  ██   ▄▄▄█▀  \n" +
+      "                                                                        \n",
+    "background: #111111; color: #0075cf",
+  );
+
   // Load templates and translations in parallel before the router starts.
   try {
     await Promise.all([loadTemplates(), initI18n()]);
@@ -24,15 +28,16 @@ async function bootstrap() {
   }
 
   // Register routes.
-  on("/highscores", () => renderHighscores());
-  on("/block", () => renderStatList("block"));
-  on("/block/:stat", ({ stat }) => renderStatDetail("block", stat));
-  on("/item", () => renderStatList("item"));
-  on("/item/:stat", ({ stat }) => renderStatDetail("item", stat));
-  on("/entity", () => renderStatList("entity"));
-  on("/entity/:stat", ({ stat }) => renderStatDetail("entity", stat));
-  on("/player", () => renderPlayerList());
-  on("/player/:name", ({ name }) => renderPlayerDetail(name));
+  on("/highscore", () => renderHighscore(null));
+  on("/highscore/:stat", ({ stat }) => renderHighscore(stat));
+  on("/block", () => renderStats("block", null));
+  on("/block/:stat", ({ stat }) => renderStats("block", stat));
+  on("/item", () => renderStats("item", null));
+  on("/item/:stat", ({ stat }) => renderStats("item", stat));
+  on("/entity", () => renderStats("entity", null));
+  on("/entity/:stat", ({ stat }) => renderStats("entity", stat));
+  on("/player", () => renderPlayers());
+  on("/player/:name", ({ name }) => renderPlayers(name));
 
   start();
 }

@@ -1,10 +1,17 @@
 @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@400&family=Source+Code+Pro:wght@400&display=swap");
 
 /* ---- Reset & base ---------------------------------------- */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 :root {
+  --font:        "Nunito", system-ui, sans-serif;
+
   --bg:          #212121;
+  --bg-darker:   #1b1b1b;
   --bg-surface:  #0a0a0a;
   --bg-card:     #0f3460;
   --accent:      #01579b;
@@ -13,13 +20,16 @@
   --text-muted:  #a0a8b8;
   --border:      #002038;
   --scrollbar:   #01579b;
-  --radius:      .4rem;
-  --nav-h:       3em;
-  --toc-w:       18em;
-  --font:        "Nunito", system-ui, sans-serif;
+
   --gold:        #ffd700;
   --silver:      #c0c0c0;
   --bronze:      #cd7f32;
+
+  --radius:                .2rem;
+  --nav-h:                 3em;
+  --toc-w:                 18em;
+  --player-head-size:      2em;
+  --player-grid-head-size: 5em;
 }
 
 html {
@@ -68,12 +78,9 @@ h1, h2, h3, h4, h5, h6 {
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 0.6rem;
   color: var(--text);
   text-decoration: none;
 }
-
-.topnav .logo img { height: 32px; width: auto; border-radius: 4px; }
 
 .topnav .nav-links {
   display: grid;
@@ -129,9 +136,13 @@ h1, h2, h3, h4, h5, h6 {
   font-family: inherit;
 }
 
-.toc-search:focus { border-color: var(--accent); }
+.toc-search:focus {
+  border-color: var(--accent);
+}
 
-.toc ul { list-style: none; }
+.toc ul {
+  list-style: none;
+}
 
 .toc-link {
   display: block;
@@ -144,8 +155,16 @@ h1, h2, h3, h4, h5, h6 {
   transition: color 0.12s, background 0.12s;
 }
 
-.toc-link:hover { color: var(--text); background: var(--bg-card); text-decoration: none; }
-.toc-link.toc-active { color: var(--text); background: var(--accent); }
+.toc-link:hover {
+  color: var(--text);
+  background: var(--bg-card);
+  text-decoration: none;
+}
+
+.toc-link.active {
+  color: var(--text);
+  background: var(--accent);
+}
 
 /* ---- Main content area ----------------------------------- */
 main {
@@ -159,11 +178,6 @@ main {
   overflow-x: auto;
 }
 
-/* Offset anchor scrolling so headings don't hide behind the sticky navbar. */
-.stat-section {
-  scroll-margin-top: 1rem;
-}
-
 /* ---- Stat sections --------------------------------------- */
 .stat-section {
   margin-bottom: 2.5rem;
@@ -172,6 +186,9 @@ main {
 /* ---- Score tables ---------------------------------------- */
 .score-table {
   border-collapse: collapse;
+  border-radius: var(--radius);
+  margin-bottom: 2rem;
+  background: var(--bg-darker);
 }
 
 .score-table thead th {
@@ -181,21 +198,25 @@ main {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
-  border-bottom: 1px solid var(--border);
+  background-color: var(--bg-surface);
 }
 
-.score-table thead th:last-child { text-align: right; }
+.score-table thead th:last-child {
+  text-align: right;
+}
 
-.score-table tbody tr {
-  border-bottom: 1px solid rgba(42,42,74,0.5);
+.score-table tbody tr:not(:last-child) {
+  border-bottom: 1px solid var(--text-muted);
   transition: background 0.1s;
 }
 
 .score-table tbody tr:nth-child(even) {
-  background: rgba(0, 0, 0, 0.15);
+  background: var(--bg);
 }
 
-.score-table tbody tr:hover { background: var(--bg-card); }
+.score-table tbody tr:hover {
+  background: var(--bg-card);
+}
 
 .score-table td {
   padding: 0.45rem 0.6rem;
@@ -203,9 +224,11 @@ main {
 }
 
 .rank {
-  width: 36px;
+  width: 0;
+  text-align: center;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+  font-family: "Source Code Pro", monospace;
 }
 
 .score {
@@ -216,22 +239,27 @@ main {
 }
 
 /* ---- Player link & head image ---------------------------- */
-.player-cell { white-space: nowrap; }
+.player-cell {
+  white-space: nowrap;
+}
 
 .player-link {
-  display: inline-grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  vertical-align: middle;
-  gap: 0.5rem;
+  display: block;
   color: var(--text);
+}
+
+.player-link:not(:first-of-type) {
+  margin-top: 0.5em;
 }
 
 .player-link:hover { color: var(--accent); text-decoration: none; }
 
 .head-img {
-  width: 30px;
-  height: 30px;
+  display: inline;
+  vertical-align: middle;
+  width: 2em;
+  height: 2em;
+  margin-right: 0.5em;
   image-rendering: pixelated;
   border-radius: 2px;
 }
@@ -344,7 +372,7 @@ footer {
 /* ---- Player grid ----------------------------------------- */
 .player-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 96px);
+  grid-template-columns: repeat(auto-fill, var(--player-grid-head-size));
   gap: 0.5rem;
   padding: 0.5rem 0;
 }
@@ -353,45 +381,41 @@ footer {
 .player-card {
   position: relative;
   display: block;
-  width: 96px;
-  height: 96px;
+  width: var(--player-grid-head-size);
+  height: var(--player-grid-head-size);
   border-radius: var(--radius);
   text-decoration: none;
 }
 
 .player-card-head {
-  width: 96px;
-  height: 96px;
+  width: var(--player-grid-head-size);
+  height: var(--player-grid-head-size);
   image-rendering: pixelated;
   border-radius: var(--radius);
   display: block;
-  transition: transform 0.1s;
-}
-
-.player-card:hover .player-card-head {
-  transform: scale(1.1);
 }
 
 .player-card-name {
+  display: flex;
   position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-size: 0.72rem;
-  white-space: nowrap;
-  padding: 0.2rem 0.45rem;
-  border-radius: var(--radius);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s;
   z-index: 10;
+  align-items: center;
+  justify-content: center;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-surface);
+  color: var(--text);
+  word-break: break-all;
+  padding: 0 .5em;
+  text-align: center;
+  font-family: "Source Code Pro", monospace;
+  opacity: 0;
+  transition: 0.2s;
 }
 
 .player-card:hover .player-card-name {
-  opacity: 1;
+  opacity: .85;
 }
 
 /* ---- Responsive ------------------------------------------ */

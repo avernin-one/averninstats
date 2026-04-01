@@ -25,13 +25,15 @@ export function formatValue(key, raw) {
   if (isDistance(key)) {
     return formatDistance(raw);
   }
+
   if (isTicks(key)) {
     return formatTicks(raw);
   }
+
   return Number(raw).toLocaleString();
 }
 
-// Converts centimetres to "Xkm Ym Zcm".
+// Converts cm to "Xkm Ym Zcm".
 // Zero parts are omitted, e.g. 150 cm -> "1m 50cm".
 export function formatDistance(cm) {
   if (cm === 0) {
@@ -78,18 +80,6 @@ export function titleCase(key) {
 }
 
 // ---------------------------------------------------------------------------
-// Asset paths
-// ---------------------------------------------------------------------------
-
-export function headImgPath(name) {
-  return `assets/images/player/head_${name}.png`;
-}
-
-export function bodyImgPath(name) {
-  return `assets/images/player/body_${name}.png`;
-}
-
-// ---------------------------------------------------------------------------
 // Data fetching
 // ---------------------------------------------------------------------------
 
@@ -101,47 +91,4 @@ export async function fetchJSON(path) {
   }
 
   return res.json();
-}
-
-// ---------------------------------------------------------------------------
-// Score data helpers
-// ---------------------------------------------------------------------------
-
-// Flattens a ScoreList object into a sorted array.
-// Input:  { "192": ["Alice", "Bob"], "50": ["Carol"] }
-// Output: [ {score: 192, name: "Alice"}, {score: 192, name: "Bob"}, {score: 50, name: "Carol"} ]
-// Sorted descending by score.
-export function flattenScoreList(scoreList) {
-  const entries = [];
-
-  for (const [scoreStr, names] of Object.entries(scoreList ?? {})) {
-    const score = Number.parseInt(scoreStr, 10);
-    for (const name of names) {
-      if (name) {
-        entries.push({ score, name });
-      }
-    }
-  }
-
-  return entries.sort((a, b) => b.score - a.score);
-}
-
-// Flattens an ActionScores object into a sorted array.
-// Input:  { "mined": {...scoreList}, "crafted": {...scoreList} }
-// Output: [ {action: "mined", label: "Mined", entries: [...]}, ... ]
-// Sorted alphabetically by label.
-// The translateFn is used to produce the label for each action key.
-export function flattenActionScores(actionScores, translateFn) {
-  const result = [];
-
-  for (const [action, scoreList] of Object.entries(actionScores ?? {})) {
-    const label = translateFn ? translateFn(action) : titleCase(action);
-    result.push({
-      action,
-      label,
-      entries: flattenScoreList(scoreList),
-    });
-  }
-
-  return result.sort((a, b) => a.label.localeCompare(b.label));
 }

@@ -29,6 +29,7 @@ type Config struct {
 	OutputDir      string `yaml:"outputDir"`
 	CacheDir       string `yaml:"cacheDir"`
 	StatsSourceDir string `yaml:"statsSourceDir"`
+	Minify         bool   `yaml:"minify"`
 
 	// Minecraft
 	MinecraftVersion string `yaml:"minecraftVersion"`
@@ -82,6 +83,7 @@ func Init() *Config {
 	pflag.StringVar(&cfg.OutputDir, "output-dir", "./output", "Directory for output files")
 	pflag.StringVar(&cfg.CacheDir, "cache-dir", "./cache", "Directory for cache files")
 	pflag.StringVar(&cfg.StatsSourceDir, "stats-source-dir", "./stats", "Directory with per-player stats JSON files")
+	pflag.BoolVar(&cfg.Minify, "minify", true, "Minify output files")
 
 	pflag.BoolVar(&cfg.LogDebug, "log-debug", false, "Enable debug logging")
 	pflag.BoolVar(&cfg.LogJson, "log-json", false, "Enable JSON log format")

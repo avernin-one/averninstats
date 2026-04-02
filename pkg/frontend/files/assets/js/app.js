@@ -4,7 +4,12 @@
 import { on, start } from "./router.js";
 import { initI18n } from "./i18n.js";
 import { loadTemplates } from "./templates.js";
-import { renderStats, renderPlayers, renderHighscore } from "./views.js";
+import {
+  renderIndex,
+  renderStats,
+  renderPlayers,
+  renderHighscore,
+} from "./views.js";
 
 async function bootstrap() {
   console.log(
@@ -39,6 +44,7 @@ async function bootstrap() {
   on("/player/:name", ({ name }) => renderPlayers(name));
 
   start();
+  renderIndex();
 }
 
 bootstrap();

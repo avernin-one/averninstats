@@ -4,7 +4,11 @@
 const BASE = "assets/templates/";
 
 const TEMPLATE_FILES = [
+  "_footer",
+  "_title",
+  "_topnav-links",
   "error",
+  "index-topnav",
   "loading",
   "page-highscore",
   "page-stats",

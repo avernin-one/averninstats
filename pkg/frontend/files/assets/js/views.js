@@ -13,6 +13,7 @@ const SCROLL_OPTIONS = {
 };
 
 let tocs = [];
+let title = "";
 
 // Waits for the browser to paint before measuring table widths.
 function scheduleAlign(scope) {
@@ -54,7 +55,29 @@ function scrollToSection(id) {
 }
 
 function setTitle(page) {
-  document.title = page ? `averninstats - ${page}` : "averninstats";
+  document.title = page ? `${title} - ${page}` : title;
+}
+
+export function renderIndex() {
+  // Title
+  document
+    .querySelector("head")
+    .insertAdjacentHTML("afterbegin", Mustache.render(T.get("_title"), {}));
+
+  title = document.querySelector("head meta[name=custom_title]").content;
+
+  // Topnav external links
+  document.querySelector("nav.topnav").innerHTML = Mustache.render(
+    T.get("index-topnav"),
+    {},
+    { topNavLinks: T.get("_topnav-links") },
+  );
+
+  // Footer
+  document.querySelector("footer").innerHTML = Mustache.render(
+    T.get("_footer"),
+    {},
+  );
 }
 
 function render(html) {

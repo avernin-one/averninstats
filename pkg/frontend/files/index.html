@@ -12,17 +12,14 @@
 <body>
 
   <nav class="topnav">
-    <a href="#/highscores" class="logo">
-      <img src="assets/images/logo.png" alt="" onerror="this.style.display='none'">
-      averninstats
-    </a>
+    <a href="#/highscore" class="logo">averninstats</a>
 
     <ul class="nav-links">
-      <li><a href="#/highscores" class="nav-link" data-section="highscores">Highscores</a></li>
-      <li><a href="#/block" class="nav-link" data-section="block">Blocks</a></li>
-      <li><a href="#/item" class="nav-link" data-section="item">Items</a></li>
-      <li><a href="#/entity" class="nav-link" data-section="entity">Entities</a></li>
-      <li><a href="#/player" class="nav-link" data-section="player">Players</a></li>
+      <li><a href="#/highscore" class="nav-link" data-id="highscore">Highscore</a></li>
+      <li><a href="#/block" class="nav-link" data-id="block">Block</a></li>
+      <li><a href="#/item" class="nav-link" data-id="item">Item</a></li>
+      <li><a href="#/entity" class="nav-link" data-id="entity">Entity</a></li>
+      <li><a href="#/player" class="nav-link" data-id="player">Player</a></li>
     </ul>
 
     <div class="topnav-right">
@@ -33,7 +30,15 @@
     </div>
   </nav>
 
-  <div id="app"></div>
+  <div id="app">
+    <div class="page-layout">
+      <nav class="toc">
+        <input id="toc-search" class="toc-search" type="search" placeholder="Filter..." aria-label="Filter stats">
+        <ul id="toc-list" data-id=""></ul>
+      </nav>
+      <main id="main"></main>
+    </div>
+  </div>
 
   <footer>built with ❤️ by <a href="https://avernin.one" target="_blank" rel="noopener">avernin</a></footer>
 

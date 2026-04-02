@@ -23,17 +23,13 @@ func Copy() {
 		if err != nil {
 			return err
 		}
-		dst := filepath.Join(config.Get().OutputDir, rel)
-
-		if d.IsDir() {
-			return os.MkdirAll(dst, 0o755)
-		}
 
 		data, err := files.ReadFile(path)
 		if err != nil {
 			return err
 		}
 
+		dst := filepath.Join(config.Get().OutputDir, rel)
 		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 			log.Warn().Err(err).Str("path", dst).Msg("failed to create directory")
 			return nil

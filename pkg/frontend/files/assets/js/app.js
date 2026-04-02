@@ -31,6 +31,8 @@ async function bootstrap() {
     return;
   }
 
+  renderIndex();
+
   // Register routes.
   on("/highscore", () => renderHighscore(null));
   on("/highscore/:stat", ({ stat }) => renderHighscore(stat));
@@ -44,7 +46,6 @@ async function bootstrap() {
   on("/player/:name", ({ name }) => renderPlayers(name));
 
   start();
-  renderIndex();
 }
 
 bootstrap();

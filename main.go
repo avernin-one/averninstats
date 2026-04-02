@@ -21,7 +21,7 @@ func main() {
 	cfg := config.Init()
 
 	// Copy embedded static files to output directory.
-	frontend.Copy()
+	frontend.New().Copy()
 
 	// Download language files and build/load the category lookup map.
 	lookup, err := translations.Run()

@@ -1,6 +1,6 @@
 module github.com/avernin-one/averninstats
 
-go 1.22.4
+go 1.26
 
 require (
 	github.com/caarlos0/env/v11 v11.4.0

@@ -34,10 +34,7 @@
 
 html {
   scroll-behavior: smooth;
-  font-size: 1em;
-  font-family: var(--font);
-  background: var(--bg);
-  color: var(--text);
+
 }
 
 /* Full-height grid: nav row, content row, footer row */
@@ -48,6 +45,19 @@ body {
   overflow: hidden;
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar) transparent;
+  font-size: 1em;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+}
+
+body.light {
+  --bg:          #f5f5f5;
+  --bg-darker:   #e0e0e0;
+  --bg-surface:  #ffffff;
+  --text:        #202020;
+  --text-muted:  #5f6368;
+  transition: 0.2s ease;
 }
 
 a { color: var(--accent); text-decoration: none; }
@@ -97,8 +107,28 @@ h1, h2, h3, h4, h5, h6 {
   transition: color 0.15s, background 0.15s;
 }
 
-.topnav .nav-link:hover { color: var(--text); background: var(--bg-card); text-decoration: none; }
-.topnav .nav-link.active { color: var(--text); background: var(--accent); }
+.topnav .nav-link:hover {
+  color: var(--text);
+  background: var(--bg-card);
+  text-decoration: none;
+}
+
+.topnav .nav-link.active {
+  color: var(--text);
+  background: var(--accent);
+}
+
+.topnav #toggleMode {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.topnav #toggleMode:hover {
+  cursor: pointer;
+}
 
 /* ---- App container --------------------------------------- */
 #app {
@@ -125,7 +155,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .toc-search {
   width: 100%;
-  background: #212121;
+  background: var(--bg);
   border: 2px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);

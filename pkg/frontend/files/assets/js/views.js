@@ -66,11 +66,11 @@ export function renderIndex() {
 
   title = document.querySelector("head meta[name=custom_title]").content;
 
+  document.querySelector("nav.topnav .logo").innerHTML = title;
+
   // Topnav external links
-  document.querySelector("nav.topnav").innerHTML = Mustache.render(
-    T.get("index-topnav"),
-    {},
-    { topNavLinks: T.get("_topnav-links") },
+  document.querySelector("nav.topnav .ext-links").innerHTML = Mustache.render(
+    T.get("_topnav-links"),
   );
 
   // Footer
@@ -78,6 +78,14 @@ export function renderIndex() {
     T.get("_footer"),
     {},
   );
+
+  // ToggleMode
+  document.querySelector("#toggleMode").addEventListener("click", (e) => {
+    document.body.classList.toggle("light");
+    e.target.innerText = document.body.classList.contains("light")
+      ? "🌑"
+      : "🌕";
+  });
 }
 
 function render(html) {

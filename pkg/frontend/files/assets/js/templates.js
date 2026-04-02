@@ -8,7 +8,6 @@ const TEMPLATE_FILES = [
   "_title",
   "_topnav-links",
   "error",
-  "index-topnav",
   "loading",
   "page-highscore",
   "page-stats",

@@ -314,10 +314,10 @@ export async function renderPlayers(playerName = null) {
           action: translate(action),
           scores: Object.entries(scoreList)
             .sort(([a], [b]) => Number(b) - Number(a))
-            .map(([score, name], index) => ({
+            .map(([score, names], index) => ({
               index: index + 1,
               score: formatValue(action, score),
-              name: translate(name),
+              names: names.map((name) => translate(name)),
             })),
         }))
         .sort((a, b) => a.action.localeCompare(b.action)),

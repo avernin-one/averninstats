@@ -33,7 +33,11 @@
       {{#scores}}
       <tr>
         <td class="rank">{{index}}</td>
-        <td>{{name}}</td>
+        <td>
+        {{#names}}
+        <div>{{.}}</div>
+        {{/names}}
+        </td>
         <td class="score">{{score}}</td>
       </tr>
       {{/scores}}

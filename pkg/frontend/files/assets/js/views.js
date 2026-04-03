@@ -264,6 +264,7 @@ export async function renderStats(category, statName) {
     }),
   );
 
+  scheduleAlign(".stat-detail");
   const url = `#/${category}/${statName}`;
   globalThis.history.replaceState(this, "", url);
 }

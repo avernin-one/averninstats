@@ -19,7 +19,7 @@ func LookupFile() string {
 
 // Returns the player cache file path.
 func PlayerCacheFile() string {
-	return filepath.Join(config.Get().CacheDir, "playercache.json")
+	return filepath.Join(config.Get().CacheDir, "player.json")
 }
 
 // Save the raw language file to the cache directory.

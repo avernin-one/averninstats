@@ -50,7 +50,10 @@ func (pc *PlayerCache) Save() {
 // GetOrFetch returns the cached entry for uuid, fetching from the Mojang API
 // if the entry is missing, expired, or has incomplete skin data.
 func (pc *PlayerCache) GetOrFetch(uuid string) (*CachedPlayer, error) {
-	p := pc.findByUUID(uuid)
+	p, err := pc.GetByUUID(uuid)
+	if err != nil {
+		return nil, err
+	}
 
 	if p == nil {
 		fetched, err := pc.fetchFromAPI(uuid)
@@ -77,8 +80,10 @@ func (pc *PlayerCache) GetOrFetch(uuid string) (*CachedPlayer, error) {
 // GetByUUID returns a cached player without any network requests.
 // Returns an error if the UUID is not found.
 func (pc *PlayerCache) GetByUUID(uuid string) (*CachedPlayer, error) {
-	if p := pc.findByUUID(uuid); p != nil {
-		return p, nil
+	for _, p := range *pc {
+		if p.UUID == uuid {
+			return p, nil
+		}
 	}
 	return nil, fmt.Errorf("player %q not found in cache", uuid)
 }
@@ -95,15 +100,6 @@ func (pc *PlayerCache) EnsureSkin(p *CachedPlayer) {
 	if pc.isExpired(p) || !player.BodyExists(config.Get().OutputDir, p.Name) {
 		player.SaveBody(p.Skin, config.Get().OutputDir, p.Name, p.SkinModel)
 	}
-}
-
-func (pc *PlayerCache) findByUUID(uuid string) *CachedPlayer {
-	for _, p := range *pc {
-		if p.UUID == uuid {
-			return p
-		}
-	}
-	return nil
 }
 
 func (pc *PlayerCache) isExpired(p *CachedPlayer) bool {

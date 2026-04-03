@@ -14,7 +14,7 @@ import (
 	"github.com/tdewolff/minify/v2/js"
 )
 
-//go:embed files/*
+//go:embed all:files/*
 var files embed.FS
 
 var m *minify.M

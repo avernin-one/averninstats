@@ -72,7 +72,9 @@ func (p *Processor) writePlayerManifest() {
 		}
 	}
 
-	sort.Strings(names)
+	// we can't use strings.Sort() here cause it is case-sensitive and will not
+	// sort as expected.
+	sort.Slice(names, func(i, j int) bool { return utils.LessLower(names[i], names[j]) })
 
 	if err := utils.SaveJSONFile(outFile, names); err != nil {
 		log.Error().Err(err).Str("category", cache.TypePlayer).Msg("failed to write player manifest file")

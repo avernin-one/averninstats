@@ -98,7 +98,7 @@ func FileExists(filePath string, falseIfEmpty bool) bool {
 		return false
 	}
 
-	return !(falseIfEmpty && info.Size() == 0)
+	return info.Size() == 0 && falseIfEmpty
 }
 
 // NewHttpRequest performs a GET request to url and returns the response body.

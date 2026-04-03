@@ -48,4 +48,4 @@ async function bootstrap() {
   start();
 }
 
-bootstrap();
+await bootstrap();

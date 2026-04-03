@@ -10,6 +10,7 @@ import (
 
 	"github.com/avernin-one/averninstats/pkg/cache"
 	"github.com/avernin-one/averninstats/pkg/config"
+	"github.com/avernin-one/averninstats/pkg/utils"
 	"github.com/rs/zerolog/log"
 )
 
@@ -140,8 +141,8 @@ func (p *Processor) Flush(pc *cache.PlayerCache) error {
 
 		path := filepath.Join(config.Get().OutputDir, cache.TypePlayer,
 			fmt.Sprintf("%s.json", player.Name))
-		if err := saveJSON(path, player); err != nil {
-			log.Warn().Err(err).Str("player", player.Name).Msg("failed to write player file")
+		if err := utils.SaveJSONFile(path, player); err != nil {
+			log.Error().Err(err).Str("player", player.Name).Msg("failed to write player file")
 		}
 
 		cp, err := pc.GetByUUID(player.UUID)
@@ -153,7 +154,7 @@ func (p *Processor) Flush(pc *cache.PlayerCache) error {
 	// Write global stat files.
 	for name, scores := range p.highscores {
 		path := filepath.Join(config.Get().OutputDir, cache.TypeHighscore, fmt.Sprintf("%s.json", name))
-		if err := saveJSON(path, HighscoreEntry{Name: name, Scores: scores}); err != nil {
+		if err := utils.SaveJSONFile(path, HighscoreEntry{Name: name, Scores: scores}); err != nil {
 			log.Error().Err(err).Str("stat", name).Msg("failed to write highscore file")
 		}
 	}
@@ -173,7 +174,7 @@ func (p *Processor) Flush(pc *cache.PlayerCache) error {
 				Scores: statsScores,
 			}
 
-			if err := saveJSON(outFile, statsEntry); err != nil {
+			if err := utils.SaveJSONFile(outFile, statsEntry); err != nil {
 				log.Error().Err(err).Str("category", category).Str("stat", name).Msg("failed to write stat file")
 			}
 		}
@@ -357,23 +358,4 @@ func trimNamespace(key string) string {
 	log.Warn().Str("key", key).Msg("stats key missing namespace separator")
 
 	return key
-}
-
-func saveJSON(path string, v any) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
-		return fmt.Errorf("create dir: %w", err)
-	}
-
-	data, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return fmt.Errorf("encode JSON: %w", err)
-	}
-
-	if err := os.WriteFile(path, data, 0o600); err != nil {
-		return fmt.Errorf("write file: %w", err)
-	}
-
-	log.Debug().Str("path", path).Msg("file saved")
-
-	return nil
 }

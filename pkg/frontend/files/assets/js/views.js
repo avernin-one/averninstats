@@ -110,8 +110,8 @@ function render(html) {
   document.getElementById("main").innerHTML = html;
 }
 
-function renderLoading() {
-  render(Mustache.render(T.get("loading"), {}));
+function renderLoading(info = "") {
+  render(Mustache.render(T.get("loading"), { info: info }));
 }
 
 function renderError(message) {
@@ -172,12 +172,11 @@ export async function renderHighscore(stat = null) {
   let site = document.querySelector(`.stat-detail[data-id="highscore"]`);
 
   if (site == null) {
-    renderLoading();
-
     const sections = [];
     for (const name of manifest) {
       let data;
       try {
+        renderLoading(name.name);
         data = await fetchJSON(`highscore/${name.id}.json`);
 
         data.scores = Object.entries(data.scores)
@@ -227,7 +226,7 @@ export async function renderStats(category, statName) {
   setActiveNav(category);
   setActiveToc(statName);
 
-  renderLoading();
+  renderLoading(translate(statName));
 
   let data = {};
   try {
@@ -290,6 +289,7 @@ export async function renderPlayers(playerName = null) {
   }
 
   setTitle(`Player - ${playerName}`);
+  renderLoading(playerName);
 
   let data;
   try {

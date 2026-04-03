@@ -76,30 +76,7 @@ func Run() (*cache.Lookup, error) {
 	var languages []string
 
 	for key, obj := range index.Objects {
-		if !strings.HasPrefix(key, langPrefix) {
-			continue
-		}
-
-		name := langName(key, langPrefix)
-
-		// Fetch from raw cache or download.
-		raw, err := getRaw(name, obj.Hash)
-		if err != nil {
-			log.Error().Err(err).Str("language", name).Msg("failed to get language, skipping")
-			continue
-		}
-
-		// Build the lookup from the source language.
-		if name == lookupSource {
-			populateLookup(l, raw)
-		}
-
-		// Always re-write the processed i18n file so version changes are picked up.
-		if err := writeProcessed(name, raw); err != nil {
-			log.Warn().Err(err).Str("language", name).Msg("failed to write processed language file")
-		}
-
-		languages = append(languages, name)
+		processLanguage(l, &languages, key, obj.Hash, langPrefix)
 	}
 
 	if l.AnyEmpty() {
@@ -124,6 +101,33 @@ func Run() (*cache.Lookup, error) {
 	}
 
 	return l, nil
+}
+
+func processLanguage(l *cache.Lookup, languages *[]string, key, hash, langPrefix string) {
+	if !strings.HasPrefix(key, langPrefix) {
+		return
+	}
+
+	name := langName(key, langPrefix)
+
+	// Fetch from raw cache or download.
+	raw, err := getRaw(name, hash)
+	if err != nil {
+		log.Error().Err(err).Str("language", name).Msg("failed to get language, skipping")
+		return
+	}
+
+	// Build the lookup from the source language.
+	if name == lookupSource {
+		populateLookup(l, raw)
+	}
+
+	// Always re-write the processed i18n file so version changes are picked up.
+	if err := writeProcessed(name, raw); err != nil {
+		log.Warn().Err(err).Str("language", name).Msg("failed to write processed language file")
+	}
+
+	*languages = append(*languages, name)
 }
 
 // getRaw returns the raw language map for a given language. It first checks

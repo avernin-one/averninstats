@@ -243,6 +243,7 @@ func (p *Processor) processStatEntry(player *Player, action, stat string, count 
 		if t.category == cache.TypeItem && action == "killed" {
 			continue
 		}
+
 		if !t.contains(stat) {
 			continue
 		}
@@ -266,6 +267,8 @@ func (p *Processor) processStatEntry(player *Player, action, stat string, count 
 		}
 
 		playerCat[action][count] = append(playerCat[action][count], stat)
+		slices.Sort(playerCat[action][count]) // reduce diffs in git
+
 		trimScoreList(playerCat[action], config.Get().NumPlayerHighscores)
 
 		// Track that this UUID appears in at least one ranking.
@@ -288,6 +291,7 @@ func (p *Processor) resolveNames(uuidToName map[string]string) {
 	for _, sl := range p.highscores {
 		replace(sl)
 	}
+
 	for _, statScores := range []StatScores{p.scores.Block, p.scores.Item, p.scores.Entity} {
 		for _, actionScores := range statScores {
 			for _, sl := range actionScores {

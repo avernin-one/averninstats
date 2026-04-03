@@ -121,7 +121,7 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--accent);
 }
 
-.topnav #toggleMode {
+.topnav #toggleButton {
   background: none;
   border: none;
   font-family: inherit;
@@ -129,7 +129,7 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0;
 }
 
-.topnav #toggleMode:hover {
+.topnav #toggleButton:hover {
   cursor: pointer;
 }
 

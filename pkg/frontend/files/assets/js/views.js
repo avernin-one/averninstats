@@ -79,12 +79,30 @@ export function renderIndex() {
     {},
   );
 
-  // ToggleMode
-  document.querySelector("#toggleMode").addEventListener("click", (e) => {
-    document.body.classList.toggle("light");
-    e.target.innerText = document.body.classList.contains("light")
-      ? "🌑"
-      : "🌕";
+  const darkButton = "🌑";
+  const lightButton = "🌕";
+  const lastModeKey = "lastMode";
+  const toggleButton = document.querySelector("#toggleButton");
+
+  function applyMode(isLight) {
+    document.body.classList.toggle("light", isLight);
+    toggleButton.innerText = isLight ? darkButton : lightButton;
+    localStorage.setItem(lastModeKey, isLight ? "light" : "dark");
+  }
+
+  toggleButton.addEventListener("click", () => {
+    const isLight = !document.body.classList.contains("light");
+    applyMode(isLight);
+  });
+
+  window.addEventListener("DOMContentLoaded", () => {
+    const stored = localStorage.getItem(lastModeKey);
+
+    const isLight =
+      stored === "light" ||
+      (!stored && window.matchMedia?.("(prefers-color-scheme: light)").matches);
+
+    applyMode(isLight);
   });
 }
 

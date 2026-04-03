@@ -9,11 +9,11 @@ export function on(pattern, handler) {
   const keys = [];
 
   const regexStr = pattern
-    .replace(/:([^/]+)/g, (_, key) => {
+    .replaceAll(/:([^/]+)/g, (_, key) => {
       keys.push(key);
       return "([^/]+)";
     })
-    .replace(/\*/g, ".*");
+    .replaceAll(/\*/g, ".*");
 
   routes.push({
     regex: new RegExp(`^${regexStr}$`),

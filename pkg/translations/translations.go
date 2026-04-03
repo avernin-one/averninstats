@@ -258,7 +258,10 @@ func fetchAssetIndex(minecraftVersion string) (*assetIndex, error) {
 		return nil, fmt.Errorf("decode asset index: %w", err)
 	}
 
-	utils.SaveJSONFile(cache.AssetIndexFile(), index)
+	if err := utils.SaveJSONFile(cache.AssetIndexFile(), index); err != nil {
+		log.Warn().Err(err).Str("version", minecraftVersion).Msg("failed to cache asset index")
+		return &index, err
+	}
 
 	return &index, nil
 }

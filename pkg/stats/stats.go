@@ -2,17 +2,7 @@ package stats
 
 import (
 	"sort"
-
-	"github.com/avernin-one/averninstats/pkg/cache"
 )
-
-var categories = []string{
-	cache.TypeHighscore,
-	cache.TypeBlock,
-	cache.TypeItem,
-	cache.TypeEntity,
-	cache.TypePlayer,
-}
 
 // sortedKeys returns the keys of list in descending order (highest first).
 func sortedKeys(list ScoreList) []int {

@@ -25,7 +25,7 @@ type versionManifest struct {
 type versionData struct {
 	AssetIndex struct {
 		URL string `json:"url"`
-	} `json:"assetIndex"`
+	} `json:"assetIndex"` //nolint:tagliatelle // defined by mojoang
 }
 
 type assetIndex struct {

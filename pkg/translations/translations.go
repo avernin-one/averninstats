@@ -36,11 +36,11 @@ type assetIndex struct {
 }
 
 var (
-	// populateRe classifies a raw Mojang key into block/item/entity/stat.
+	// Classifies a raw Mojang key into block/item/entity/stat.
 	populateRe = regexp.MustCompile(`^(block|item|entity|stat)(\.minecraft)?\.`)
-	// processRe strips the full namespaced prefix.
+	// Strips the full namespaced prefix.
 	processRe = regexp.MustCompile(`^(block|item|entity|stats?(_type)?)(\.minecraft)?\.`)
-	// lookupSource is the language used to build the Lookup.
+	// Is the language used to build the Lookup.
 	lookupSource = "en-gb"
 )
 

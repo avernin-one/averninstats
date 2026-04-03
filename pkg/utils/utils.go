@@ -116,7 +116,7 @@ func NewHttpRequest(url string) ([]byte, error) {
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != 200 {
+	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("GET %q returned status %d", url, res.StatusCode)
 	}
 

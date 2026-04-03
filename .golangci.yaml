@@ -36,6 +36,7 @@ formatters:
       no-lex-order: true
 
 linters:
+  default: none
   enable:
     - asasalint
     - asciicheck
@@ -79,45 +80,43 @@ linters:
     - usestdlibvars
     - wastedassign
     - whitespace
-
-  disable:
-    - bodyclose
-    - containedctx
-    - cyclop
-    - decorder
-    - depguard
-    - dogsled
-    - errchkjson
-    - exhaustive
-    - exhaustruct
-    - forbidigo
-    - forcetypeassert
-    - funlen
-    - ginkgolinter
-    - gocheckcompilerdirectives
-    - gochecknoglobals
-    - gochecknoinits
-    - gocognit
-    - goconst
-    - gocyclo
-    - goheader
-    - gomodguard
-    - goprintffuncname
-    - grouper
-    - importas
-    - interfacebloat
-    - ireturn
-    - lll
-    - maintidx
-    - makezero
-    - musttag
-    - nestif
-    - nlreturn
-    - nonamedreturns
-    - nosprintfhostport
-    - paralleltest
-    - testpackage
-    - wrapcheck
+    # - bodyclose
+    # - containedctx
+    # - cyclop
+    # - decorder
+    # - depguard
+    # - dogsled
+    # - errchkjson
+    # - exhaustive
+    # - exhaustruct
+    # - forbidigo
+    # - forcetypeassert
+    # - funlen
+    # - ginkgolinter
+    # - gocheckcompilerdirectives
+    # - gochecknoglobals
+    # - gochecknoinits
+    # - gocognit
+    # - goconst
+    # - gocyclo
+    # - goheader
+    # - gomodguard
+    # - goprintffuncname
+    # - grouper
+    # - importas
+    # - interfacebloat
+    # - ireturn
+    # - lll
+    # - maintidx
+    # - makezero
+    # - musttag
+    # - nestif
+    # - nlreturn
+    # - nonamedreturns
+    # - nosprintfhostport
+    # - paralleltest
+    # - testpackage
+    # - wrapcheck
 
   settings:
     gocritic:
@@ -150,7 +149,7 @@ linters:
     tagliatelle:
       case:
         rules:
-          json: camel
+          json: snake
           yaml: camel
           xml: camel
           bson: camel

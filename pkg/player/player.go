@@ -35,7 +35,7 @@ type playerMetadata struct {
 			Metadata struct {
 				Model string `json:"model"`
 			} `json:"metadata"`
-		} `json:"SKIN"`
+		} `json:"SKIN"` //nolint:tagliatelle // defined by mojoang
 	} `json:"textures"`
 }
 
@@ -155,11 +155,11 @@ func downloadImage(url string) (image.Image, error) {
 }
 
 func saveImage(img image.Image, path string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o775); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return fmt.Errorf("create directory: %w", err)
 	}
 
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o664)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("create file: %w", err)
 	}

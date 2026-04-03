@@ -13,27 +13,27 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// ScoreList maps a score value to the players that achieved it.
+// Maps a score value to the players that achieved it.
 type ScoreList map[int][]string
 
-// ActionScores maps an action (mined, crafted, ...) to its score list.
+// Maps an action (mined, crafted, ...) to its score list.
 type ActionScores map[string]ScoreList
 
-// StatScores maps a stat name (stone, creeper, ...) to its per-action scores.
+// Maps a stat name (stone, creeper, ...) to its per-action scores.
 type StatScores map[string]ActionScores
 
-// PlayerScores holds a player's personal top-N scores per category.
-// Structure: category -> action -> score -> []statName
+// Holds a player's personal top-N scores per category.
+// Structure: category -> action -> score -> []statName.
 type PlayerScores map[string]map[string]ScoreList
 
-// Medals counts first, second, and third place highscore positions.
+// Counts first, second, and third place highscore positions.
 type Medals struct {
 	Gold   int `json:"gold"`
 	Silver int `json:"silver"`
 	Bronze int `json:"bronze"`
 }
 
-// Player is the JSON output for a single player file.
+// JSON output for a single player file.
 type Player struct {
 	Name   string         `json:"name"`
 	UUID   string         `json:"uuid"`
@@ -42,13 +42,13 @@ type Player struct {
 	Scores PlayerScores   `json:"scores"` // personal top-N
 }
 
-// HighscoreEntry is written per minecraft:custom stat.
+// Is written per minecraft:custom stat.
 type HighscoreEntry struct {
 	Name   string    `json:"name"`
 	Scores ScoreList `json:"scores"`
 }
 
-// StatEntry is written per block/item/entity stat.
+// Is written per block/item/entity stat.
 type StatEntry struct {
 	Name   string       `json:"name"`
 	Type   string       `json:"type"`
@@ -272,7 +272,7 @@ func (p *Processor) processStatEntry(player *Player, action, stat string, count 
 	}
 }
 
-// resolveNames replaces all UUID placeholders with real names
+// Replaces all UUID placeholders with real names.
 func (p *Processor) resolveNames(uuidToName map[string]string) {
 	replace := func(list ScoreList) {
 		for score, entries := range list {
@@ -360,7 +360,7 @@ func trimNamespace(key string) string {
 }
 
 func saveJSON(path string, v any) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o775); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 		return fmt.Errorf("create dir: %w", err)
 	}
 
@@ -369,7 +369,7 @@ func saveJSON(path string, v any) error {
 		return fmt.Errorf("encode JSON: %w", err)
 	}
 
-	if err := os.WriteFile(path, data, 0o664); err != nil {
+	if err := os.WriteFile(path, data, 0o600); err != nil {
 		return fmt.Errorf("write file: %w", err)
 	}
 

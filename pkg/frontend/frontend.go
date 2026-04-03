@@ -51,7 +51,7 @@ func (f *Frontend) Copy() {
 		dst := filepath.Join(config.Get().OutputDir, rel)
 
 		if d.IsDir() {
-			return os.MkdirAll(dst, 0o755)
+			return os.MkdirAll(dst, 0o750)
 		}
 
 		data, err := files.ReadFile(path)
@@ -63,7 +63,7 @@ func (f *Frontend) Copy() {
 			data = minifyFile(path, data)
 		}
 
-		if err := os.WriteFile(dst, data, 0o644); err != nil {
+		if err := os.WriteFile(dst, data, 0o600); err != nil {
 			log.Warn().Err(err).Str("path", dst).Msg("failed to write file")
 			return nil
 		}

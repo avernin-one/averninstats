@@ -18,11 +18,11 @@ import (
 // SaveYAMLFile encodes data as YAML and writes it to filePath, creating
 // intermediate directories as needed.
 func SaveYAMLFile(filePath string, data interface{}) error {
-	if err := os.MkdirAll(filepath.Dir(filePath), 0o775); err != nil {
+	if err := os.MkdirAll(filepath.Dir(filePath), 0o750); err != nil {
 		return fmt.Errorf("create directory %q: %w", filepath.Dir(filePath), err)
 	}
 
-	out, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o664)
+	out, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("open file %q: %w", filePath, err)
 	}
@@ -44,11 +44,11 @@ func SaveYAMLFile(filePath string, data interface{}) error {
 // SaveJSONFile encodes data as indented JSON and writes it to filePath,
 // creating intermediate directories as needed.
 func SaveJSONFile(filePath string, data interface{}) error {
-	if err := os.MkdirAll(filepath.Dir(filePath), 0o775); err != nil {
+	if err := os.MkdirAll(filepath.Dir(filePath), 0o750); err != nil {
 		return fmt.Errorf("create directory %q: %w", filepath.Dir(filePath), err)
 	}
 
-	out, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o664)
+	out, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("open file %q: %w", filePath, err)
 	}
@@ -129,5 +129,5 @@ func AddRandomTime(currentTime time.Time, extraHours int) time.Time {
 		return currentTime
 	}
 
-	return currentTime.Add(time.Duration(rand.Intn(extraHours)) * time.Hour)
+	return currentTime.Add(time.Duration(rand.Intn(extraHours)) * time.Hour) //nolint:gosec // rand.Intn is sufficient for this use case
 }

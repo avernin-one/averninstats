@@ -167,7 +167,7 @@ func validate(c *Config) {
 	}
 
 	for _, d := range dirs {
-		if err := os.MkdirAll(d, 0o775); err != nil {
+		if err := os.MkdirAll(d, 0o750); err != nil {
 			log.Fatal().Err(err).Str("path", d).Msg("failed to create directory")
 		}
 

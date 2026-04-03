@@ -313,13 +313,17 @@ func stripTranslations(raw map[string]string) map[string]string {
 // populateLookup fills a Lookup from the source language raw map.
 func populateLookup(l *cache.Lookup, raw map[string]string) {
 	for key := range raw {
-		m := populateRe.FindStringSubmatch(key)
-		if len(m) < 2 {
+		match := populateRe.FindStringSubmatch(key)
+		if len(match) < 2 {
 			continue
 		}
 
 		stripped := processRe.ReplaceAllString(key, "")
-		switch m[1] {
+		if stripped == "air" || stripped == "cave_air" || stripped == "void_air" {
+			continue
+		}
+
+		switch match[1] {
 		case "block":
 			l.Block = append(l.Block, stripped)
 		case "item":
@@ -329,7 +333,7 @@ func populateLookup(l *cache.Lookup, raw map[string]string) {
 		case "stat":
 			l.Custom = append(l.Custom, stripped)
 		default:
-			log.Warn().Str("prefix", m[1]).Str("key", key).Msg("unknown key prefix")
+			log.Warn().Str("prefix", match[1]).Str("key", key).Msg("unknown key prefix")
 		}
 	}
 }

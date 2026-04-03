@@ -12,6 +12,8 @@
 //	-out       Output directory for extracted images (default "./output")
 //	-jar       Path to an already-downloaded client JAR (skips download)
 //	-force     Re-extract even if images already exist
+//
+//nolint:all // this file is not used yet
 package main
 
 import (

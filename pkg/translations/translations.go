@@ -297,17 +297,32 @@ func loadRaw(path string) (map[string]string, error) {
 // namespace prefix, cleaning up placeholder artifacts in the values.
 func stripTranslations(raw map[string]string) map[string]string {
 	out := make(map[string]string, len(raw))
-	for key, val := range raw {
+
+	// we need to sort the map to get consistent output results, raw contains
+	// duplicate entries like:
+	//   - item.minecraft.birch_boat
+	//   - entity.minecraft.birch_boat
+	// which causes the translation to be different each run.
+	keys := make([]string, 0, len(raw))
+	for k := range raw {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	for _, key := range keys {
 		if !processRe.MatchString(key) {
 			continue
 		}
 
 		stripped := processRe.ReplaceAllString(key, "")
 		cleaned := strings.TrimSpace(
-			strings.ReplaceAll(strings.ReplaceAll(val, "%s", ""), "  ", " "),
+			strings.ReplaceAll(strings.ReplaceAll(raw[key], "%s", ""), "  ", " "),
 		)
 
-		out[stripped] = cleaned
+		if _, exists := out[stripped]; !exists {
+			out[stripped] = cleaned
+		}
 	}
 
 	return out

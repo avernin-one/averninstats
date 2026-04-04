@@ -92,15 +92,24 @@ func ReadJSONFile(filePath string, out interface{}) error {
 	return nil
 }
 
-// FileExists returns true if the file at filePath exists.
-// When falseIfEmpty is true it also returns false for zero-byte files.
-func FileExists(filePath string, falseIfEmpty bool) bool {
+// Returns true if the file at filePath exists.
+// When notExistentIfEmpty is true it also returns false for zero-byte files
+// even tho they exist.
+func FileExists(filePath string, notExistentIfEmpty bool) bool {
 	info, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
 		return false
 	}
 
-	return info.Size() == 0 && falseIfEmpty
+	if err != nil {
+		return false
+	}
+
+	if notExistentIfEmpty && info.Size() == 0 {
+		return false
+	}
+
+	return true
 }
 
 // NewHttpRequest performs a GET request to url and returns the response body.

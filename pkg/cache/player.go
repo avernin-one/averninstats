@@ -50,12 +50,9 @@ func (pc *PlayerCache) Save() {
 // GetOrFetch returns the cached entry for uuid, fetching from the Mojang API
 // if the entry is missing, expired, or has incomplete skin data.
 func (pc *PlayerCache) GetOrFetch(uuid string) (*CachedPlayer, error) {
-	p, err := pc.GetByUUID(uuid)
-	if err != nil {
-		return nil, err
-	}
+	cp := pc.GetByUUID(uuid)
 
-	if p == nil {
+	if cp == nil {
 		fetched, err := pc.fetchFromAPI(uuid)
 		if err != nil {
 			return nil, err
@@ -68,50 +65,54 @@ func (pc *PlayerCache) GetOrFetch(uuid string) (*CachedPlayer, error) {
 		return fetched, nil
 	}
 
-	if pc.isExpired(p) || p.SkinURL == "" || p.SkinModel == "" {
-		if err := pc.refresh(p); err != nil {
-			log.Warn().Err(err).Str("name", p.Name).Msg("failed to refresh player, using stale data")
+	if cp.IsExpired() {
+		if err := cp.Refresh(); err != nil {
+			log.Warn().Err(err).Str("name", cp.Name).Msg("failed to refresh player, using stale data")
 		}
 	}
 
-	return p, nil
+	return cp, nil
 }
 
 // GetByUUID returns a cached player without any network requests.
 // Returns an error if the UUID is not found.
-func (pc *PlayerCache) GetByUUID(uuid string) (*CachedPlayer, error) {
+func (pc *PlayerCache) GetByUUID(uuid string) *CachedPlayer {
 	for _, p := range *pc {
 		if p.UUID == uuid {
-			return p, nil
+			return p
 		}
 	}
-	return nil, fmt.Errorf("player %q not found in cache", uuid)
+
+	return nil
 }
 
 // EnsureSkin downloads the skin image if not already in memory, then renders
 // and saves head/body images to disk if they are missing or expired.
-func (pc *PlayerCache) EnsureSkin(p *CachedPlayer) {
-	if p.Skin == nil {
-		p.Skin = player.GetSkin(p.SkinURL)
+func (cp *CachedPlayer) EnsureSkin() {
+	if cp.Skin == nil {
+		cp.Skin = player.GetSkin(cp.SkinURL)
 	}
-	if pc.isExpired(p) || !player.HeadExists(config.Get().OutputDir, p.Name) {
-		player.SaveHead(p.Skin, config.Get().OutputDir, p.Name, p.SkinModel)
+
+	if !player.HeadExists(config.Get().OutputDir, cp.Name) {
+		player.SaveHead(cp.Skin, config.Get().OutputDir, cp.Name, cp.SkinModel)
 	}
-	if pc.isExpired(p) || !player.BodyExists(config.Get().OutputDir, p.Name) {
-		player.SaveBody(p.Skin, config.Get().OutputDir, p.Name, p.SkinModel)
+
+	if !player.BodyExists(config.Get().OutputDir, cp.Name) {
+		player.SaveBody(cp.Skin, config.Get().OutputDir, cp.Name, cp.SkinModel)
 	}
 }
 
-func (pc *PlayerCache) isExpired(p *CachedPlayer) bool {
+func (cp *CachedPlayer) IsExpired() bool {
 	maxAge := time.Duration(config.Get().CacheMaxAge) * time.Hour
-	if time.Since(p.LastCheck) > maxAge {
+	if time.Since(cp.LastCheck) > maxAge {
 		log.Warn().
-			Str("name", p.Name).
-			Str("age", time.Since(p.LastCheck).Round(time.Minute).String()).
+			Str("name", cp.Name).
+			Str("age", time.Since(cp.LastCheck).Round(time.Minute).String()).
 			Str("max_age", maxAge.String()).
 			Msg("player cache entry expired")
 		return true
 	}
+
 	return false
 }
 
@@ -120,6 +121,7 @@ func (pc *PlayerCache) fetchFromAPI(uuid string) (*CachedPlayer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("fetch player %q: %w", uuid, err)
 	}
+
 	return &CachedPlayer{
 		Name:      data.Name,
 		UUID:      uuid,
@@ -129,15 +131,20 @@ func (pc *PlayerCache) fetchFromAPI(uuid string) (*CachedPlayer, error) {
 	}, nil
 }
 
-func (pc *PlayerCache) refresh(p *CachedPlayer) error {
-	data, err := player.Fetch(p.UUID, config.Get().QueryDelay)
+func (cp *CachedPlayer) Refresh() error {
+	data, err := player.Fetch(cp.UUID, config.Get().QueryDelay)
 	if err != nil {
 		return err
 	}
-	p.Name = data.Name
-	p.SkinURL = data.SkinURL
-	p.SkinModel = data.SkinModel
-	p.LastCheck = utils.AddRandomTime(time.Now(), config.Get().LastCheckJitter)
-	log.Info().Str("name", p.Name).Msg("player cache entry refreshed")
+
+	cp.Name = data.Name
+	cp.SkinURL = data.SkinURL
+	cp.SkinModel = data.SkinModel
+	cp.LastCheck = utils.AddRandomTime(time.Now(), config.Get().LastCheckJitter)
+
+	cp.EnsureSkin()
+
+	log.Info().Str("name", cp.Name).Msg("player cache entry refreshed")
+
 	return nil
 }

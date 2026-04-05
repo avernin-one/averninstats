@@ -45,14 +45,18 @@ func (l *Lookup) AnyEmpty() bool {
 	return len(l.Block) == 0 || len(l.Item) == 0 || len(l.Entity) == 0 || len(l.Custom) == 0
 }
 
-func (l *Lookup) ContainsBlock(stat string) bool {
-	return slices.Contains(l.Block, stat)
-}
+func (l *Lookup) GetType(stat string) (string, error) {
+	if slices.Contains(l.Block, stat) {
+		return TypeBlock, nil
+	}
 
-func (l *Lookup) ContainsItem(stat string) bool {
-	return slices.Contains(l.Item, stat)
-}
+	if slices.Contains(l.Item, stat) {
+		return TypeItem, nil
+	}
 
-func (l *Lookup) ContainsEntity(stat string) bool {
-	return slices.Contains(l.Entity, stat)
+	if slices.Contains(l.Entity, stat) {
+		return TypeEntity, nil
+	}
+
+	return "", fmt.Errorf(`Stat "%s" not found.`, stat)
 }

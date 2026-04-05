@@ -56,22 +56,22 @@ func SaveJSONFile(filePath string, data interface{}) error {
 	}
 	defer out.Close()
 
+	var jsonData []byte
 	if config.Get().Minify {
-		jsonData, err := json.Marshal(data)
+		jsonData, err = json.Marshal(data)
 		if err != nil {
 			return fmt.Errorf("marshal JSON data for %q: %w", filePath, err)
 		}
-
-		_, err = out.Write(jsonData)
-		if err != nil {
-			return fmt.Errorf("write JSON data to %q: %w", filePath, err)
-		}
 	} else {
-		enc := json.NewEncoder(out)
-		enc.SetIndent("", "  ")
-		if err := enc.Encode(data); err != nil {
-			return fmt.Errorf("encode JSON to %q: %w", filePath, err)
+		jsonData, err = json.MarshalIndent(data, "", "  ")
+		if err != nil {
+			return fmt.Errorf("marshal indent JSON to %q: %w", filePath, err)
 		}
+	}
+
+	_, err = out.Write(jsonData)
+	if err != nil {
+		return fmt.Errorf("write JSON data to %q: %w", filePath, err)
 	}
 
 	log.Debug().Str("filepath", filePath).Msg("saved file")

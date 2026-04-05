@@ -76,7 +76,7 @@ export function formatTicks(ticks) {
 export function titleCase(key) {
   return String(key)
     .replaceAll(/[-_]/g, " ")
-    .replaceAll(/\b\w/g, (c) => c.toUpperCase());
+    .replaceAll(/(?<!\()\b\w/g, (c) => c.toUpperCase());
 }
 
 // ---------------------------------------------------------------------------

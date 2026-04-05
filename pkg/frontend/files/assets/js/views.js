@@ -172,32 +172,31 @@ export async function renderHighscore(stat = null) {
   let site = document.querySelector(`.stat-detail[data-id="highscore"]`);
 
   if (site == null) {
-    const sections = [];
-    for (const name of manifest) {
-      let data;
-      try {
-        renderLoading(name.name);
-        data = await fetchJSON(`highscore/${name.id}.json`);
+    let data;
+    try {
+      renderLoading("highscore");
+      data = await fetchJSON(`highscore/highscore.json`);
 
-        data.scores = Object.entries(data.scores)
-          .sort(([a], [b]) => Number(b) - Number(a))
-          .map(([score, players], index) => ({
-            rank: index + 1,
-            score: formatValue(data.name, score),
-            players: players,
-          }));
+      data = Object.entries(data)
+        .sort(([a], [b]) => a.localeCompare(b)) // sort alphabetic ascending
+        .map(([id, scores]) => ({
+          id: id,
+          title: translate(id),
+          scores: Object.entries(scores)
+            .sort(([a], [b]) => Number(b) - Number(a)) // sort descending
+            .map(([score, players], index) => ({
+              rank: index + 1,
+              score: formatValue(id, score),
+              players: players,
+            })),
+        }));
 
-        data.id = data.name;
-        data.name = translate(name.id);
-      } catch (err) {
-        console.error(`Failed to fetch highscore data for ${name.id}:`, err);
-        continue;
-      }
-
-      sections.push(data);
+      console.debug("HIGHSCORE DATA", data);
+    } catch (err) {
+      console.error(`Failed to fetch highscore data`, err);
     }
 
-    render(Mustache.render(T.get("page-highscore"), { sections }));
+    render(Mustache.render(T.get("page-highscore"), data));
     scheduleAlign(".stat-detail");
   }
 

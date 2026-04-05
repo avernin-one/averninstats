@@ -190,8 +190,6 @@ export async function renderHighscore(stat = null) {
               players: players,
             })),
         }));
-
-      console.debug("HIGHSCORE DATA", data);
     } catch (err) {
       console.error(`Failed to fetch highscore data`, err);
     }

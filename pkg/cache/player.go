@@ -65,6 +65,8 @@ func (pc *PlayerCache) GetOrFetch(uuid string) (*CachedPlayer, error) {
 		return fetched, nil
 	}
 
+	cp.EnsureSkin()
+
 	if cp.IsExpired() {
 		if err := cp.Refresh(); err != nil {
 			log.Warn().Err(err).Str("name", cp.Name).Msg("failed to refresh player, using stale data")

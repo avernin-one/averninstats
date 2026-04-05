@@ -238,15 +238,15 @@ export async function renderStats(category, statName) {
   }
 
   let sections = [];
-  for (const elem in data.scores) {
+  for (const elem in data) {
     let entry = {
       id: elem,
       name: translate(elem),
-      scores: Object.entries(data.scores[elem])
+      scores: Object.entries(data[elem])
         .sort(([a], [b]) => Number(b) - Number(a))
         .map(([score, players], index) => ({
           rank: index + 1,
-          score: formatValue(data.name, score),
+          score: formatValue(elem, score),
           players: players,
         })),
     };

@@ -11,8 +11,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// CachedPlayer holds the resolved name, skin metadata, and freshness info
-// for a single Minecraft player UUID.
+// Holds the resolved name, skin metadata, and freshness info
+// for a single Minecraft player.
 type CachedPlayer struct {
 	Name      string      `json:"name"`
 	UUID      string      `json:"uuid"`
@@ -22,11 +22,11 @@ type CachedPlayer struct {
 	Skin      image.Image `json:"-"` // in-memory only
 }
 
-// PlayerCache manages the persisted list of resolved players.
+// Manages the persisted list of resolved players.
 type PlayerCache []*CachedPlayer
 
-// NewPlayerCache loads the player cache from disk. Returns an empty cache
-// (without error) if the file does not exist yet.
+// Loads the player cache from disk or an empty cache if the
+// file does not exist yet.
 func NewPlayerCache() *PlayerCache {
 	pc := &PlayerCache{}
 
@@ -53,19 +53,15 @@ func (pc *PlayerCache) GetOrFetch(uuid string) (*CachedPlayer, error) {
 	cp := pc.GetByUUID(uuid)
 
 	if cp == nil {
-		fetched, err := pc.fetchFromAPI(uuid)
+		cp, err := pc.fetchFromAPI(uuid)
 		if err != nil {
 			return nil, err
 		}
 
-		*pc = append(*pc, fetched)
+		*pc = append(*pc, cp)
 
-		log.Info().Str("name", fetched.Name).Str("uuid", uuid).Msg("new player added to cache")
-
-		return fetched, nil
+		log.Info().Str("name", cp.Name).Str("uuid", uuid).Msg("new player added to cache")
 	}
-
-	cp.EnsureSkin()
 
 	if cp.IsExpired() {
 		if err := cp.Refresh(); err != nil {
@@ -73,11 +69,13 @@ func (pc *PlayerCache) GetOrFetch(uuid string) (*CachedPlayer, error) {
 		}
 	}
 
+	cp.EnsureSkin()
+
 	return cp, nil
 }
 
-// GetByUUID returns a cached player without any network requests.
-// Returns an error if the UUID is not found.
+// Returns a cached player without any network requests
+// or nil if the UUID is not found.
 func (pc *PlayerCache) GetByUUID(uuid string) *CachedPlayer {
 	for _, p := range *pc {
 		if p.UUID == uuid {
@@ -88,7 +86,7 @@ func (pc *PlayerCache) GetByUUID(uuid string) *CachedPlayer {
 	return nil
 }
 
-// EnsureSkin downloads the skin image if not already in memory, then renders
+// Downloads the skin image if not already in memory, then renders
 // and saves head/body images to disk if they are missing or expired.
 func (cp *CachedPlayer) EnsureSkin() {
 	if cp.Skin == nil {
@@ -143,8 +141,6 @@ func (cp *CachedPlayer) Refresh() error {
 	cp.SkinURL = data.SkinURL
 	cp.SkinModel = data.SkinModel
 	cp.LastCheck = utils.AddRandomTime(time.Now(), config.Get().LastCheckJitter)
-
-	cp.EnsureSkin()
 
 	log.Info().Str("name", cp.Name).Msg("player cache entry refreshed")
 

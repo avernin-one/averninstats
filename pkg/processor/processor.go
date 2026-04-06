@@ -2,6 +2,7 @@ package processor
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -65,36 +66,30 @@ func New(lookup *cache.Lookup, pc *cache.PlayerCache) *Processor {
 	return p
 }
 
-// - (Process) iterate over all *.json files within the given source directory
-// - (processStats) load "stats" from json file and return it to Process
-// - (processPlayer)
 func (p *Processor) Process() {
-	entries, err := os.ReadDir(config.Get().StatsSourceDir)
+	files, err := os.ReadDir(config.Get().StatsSourceDir)
 	if err != nil {
 		log.Fatal().Err(err).Str("dir", config.Get().StatsSourceDir).Msg("cannot read stats source directory")
 	}
 
 	current := 0
 	skipped := 0
-	total := len(entries)
+	total := len(files)
 
-	// Iterate over all found files
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
+	for _, file := range files {
+		if file.IsDir() || !strings.HasSuffix(file.Name(), ".json") {
 			skipped++
-			log.Debug().Bool("is_dir", entry.IsDir()).Str("name", entry.Name()).Msg("skipping non-JSON file")
+			log.Info().Bool("is_dir", file.IsDir()).Str("name", file.Name()).Msg("skipping non-JSON file")
 			continue
 		}
 
 		current++
-		uuid := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
-		path := filepath.Join(config.Get().StatsSourceDir, entry.Name())
+		uuid := strings.TrimSuffix(file.Name(), filepath.Ext(file.Name()))
+		path := filepath.Join(config.Get().StatsSourceDir, file.Name())
 
 		log.Info().
-			Str("file", entry.Name()).
-			Int("total", total).
-			Int("current", current).
-			Int("skipped", skipped).
+			Str("file", file.Name()).
+			Str("progress", fmt.Sprintf("%d/%d/%d", current, skipped, total)).
 			Msg("processing stats file")
 
 		var statsFile struct {

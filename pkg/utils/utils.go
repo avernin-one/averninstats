@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,45 +15,24 @@ import (
 
 	"github.com/avernin-one/averninstats/pkg/config"
 	"github.com/rs/zerolog/log"
-	"gopkg.in/yaml.v3"
+	"golang.org/x/time/rate"
 )
 
-// SaveYAMLFile encodes data as YAML and writes it to filePath, creating
-// intermediate directories as needed.
-func SaveYAMLFile(filePath string, data interface{}) error {
-	if err := os.MkdirAll(filepath.Dir(filePath), 0o750); err != nil {
-		return fmt.Errorf("create directory %q: %w", filepath.Dir(filePath), err)
+var (
+	// Mojang API allows 100 requests per Minute
+	limiter = rate.NewLimiter(rate.Every(time.Minute/95), 5)
+)
+
+// Encodes data as minified or indented JSON and writes it to,
+// outFile creating intermediate directories as needed.
+func SaveJSONFile(outFile string, data any) error {
+	if err := os.MkdirAll(filepath.Dir(outFile), 0o750); err != nil {
+		return fmt.Errorf("create directory %q: %w", filepath.Dir(outFile), err)
 	}
 
-	out, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+	out, err := os.OpenFile(outFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
-		return fmt.Errorf("open file %q: %w", filePath, err)
-	}
-	defer out.Close()
-
-	enc := yaml.NewEncoder(out)
-	enc.SetIndent(2)
-	defer enc.Close()
-
-	if err := enc.Encode(data); err != nil {
-		return fmt.Errorf("encode YAML to %q: %w", filePath, err)
-	}
-
-	log.Debug().Str("filepath", filePath).Msg("saved file")
-
-	return nil
-}
-
-// SaveJSONFile encodes data as indented JSON and writes it to filePath,
-// creating intermediate directories as needed.
-func SaveJSONFile(filePath string, data interface{}) error {
-	if err := os.MkdirAll(filepath.Dir(filePath), 0o750); err != nil {
-		return fmt.Errorf("create directory %q: %w", filepath.Dir(filePath), err)
-	}
-
-	out, err := os.OpenFile(filePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
-	if err != nil {
-		return fmt.Errorf("open file %q: %w", filePath, err)
+		return fmt.Errorf("open file %q: %w", outFile, err)
 	}
 	defer out.Close()
 
@@ -60,33 +40,33 @@ func SaveJSONFile(filePath string, data interface{}) error {
 	if config.Get().Minify {
 		jsonData, err = json.Marshal(data)
 		if err != nil {
-			return fmt.Errorf("marshal JSON data for %q: %w", filePath, err)
+			return fmt.Errorf("marshal JSON data for %q: %w", outFile, err)
 		}
 	} else {
 		jsonData, err = json.MarshalIndent(data, "", "  ")
 		if err != nil {
-			return fmt.Errorf("marshal indent JSON to %q: %w", filePath, err)
+			return fmt.Errorf("marshal indent JSON to %q: %w", outFile, err)
 		}
 	}
 
 	_, err = out.Write(jsonData)
 	if err != nil {
-		return fmt.Errorf("write JSON data to %q: %w", filePath, err)
+		return fmt.Errorf("write JSON data to %q: %w", outFile, err)
 	}
 
-	log.Debug().Str("filepath", filePath).Msg("saved file")
+	log.Debug().Str("file", outFile).Msg("saved file")
 
 	return nil
 }
 
-func ReadJSONFile(filePath string, out interface{}) error {
-	data, err := os.ReadFile(filePath)
+func ReadJSONFile(inFile string, out any) error {
+	data, err := os.ReadFile(inFile)
 	if err != nil {
-		return fmt.Errorf("read file %q: %w", filePath, err)
+		return fmt.Errorf("read file %q: %w", inFile, err)
 	}
 
 	if err := json.Unmarshal(data, out); err != nil {
-		return fmt.Errorf("unmarshal JSON from %q: %w", filePath, err)
+		return fmt.Errorf("unmarshal JSON from %q: %w", inFile, err)
 	}
 
 	return nil
@@ -112,8 +92,12 @@ func FileExists(filePath string, notExistentIfEmpty bool) bool {
 	return true
 }
 
-// NewHttpRequest performs a GET request to url and returns the response body.
+// Perform limited GET request to url and returns the response body.
 func NewHttpRequest(url string) ([]byte, error) {
+	if err := limiter.Wait(context.Background()); err != nil {
+		return nil, err
+	}
+
 	client := http.Client{Timeout: 10 * time.Second}
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -134,16 +118,17 @@ func NewHttpRequest(url string) ([]byte, error) {
 	return io.ReadAll(res.Body)
 }
 
-// AddRandomTime adds a random number of hours in [0, extraHours) to currentTime.
-func AddRandomTime(currentTime time.Time, extraHours int) time.Time {
-	if extraHours == 0 {
-		return currentTime
+// Adds a random number of hours in [0, addHours) to current.
+func AddRandomTime(current time.Time, addHours int) time.Time {
+	if addHours == 0 {
+		return current
 	}
 
-	return currentTime.Add(time.Duration(rand.Intn(extraHours)) * time.Hour) //nolint:gosec // rand.Intn is sufficient for this use case
+	return current.Add(time.Duration(rand.Intn(addHours)) * time.Hour) //nolint:gosec // rand.Intn is sufficient for this use case
 }
 
 // https://stackoverflow.com/a/51997907
+// Compare 2 strings case-insenstive.
 func LessLower(sa, sb string) bool {
 	for {
 		rb, nb := utf8.DecodeRuneInString(sb)

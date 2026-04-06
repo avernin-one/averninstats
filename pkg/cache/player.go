@@ -63,13 +63,14 @@ func (pc *PlayerCache) GetOrFetch(uuid string) (*CachedPlayer, error) {
 		log.Info().Str("name", cp.Name).Str("uuid", uuid).Msg("new player added to cache")
 	}
 
-	if cp.IsExpired() {
+	expired := cp.IsExpired()
+	if expired {
 		if err := cp.Refresh(); err != nil {
 			log.Warn().Err(err).Str("name", cp.Name).Msg("failed to refresh player, using stale data")
 		}
 	}
 
-	cp.EnsureSkin()
+	cp.EnsureSkin(expired)
 
 	return cp, nil
 }
@@ -88,16 +89,14 @@ func (pc *PlayerCache) GetByUUID(uuid string) *CachedPlayer {
 
 // Downloads the skin image if not already in memory, then renders
 // and saves head/body images to disk if they are missing or expired.
-func (cp *CachedPlayer) EnsureSkin() {
-	if cp.Skin == nil {
+func (cp *CachedPlayer) EnsureSkin(refresh bool) {
+	if refresh || !player.HeadExists(config.Get().OutputDir, cp.Name) {
 		cp.Skin = player.GetSkin(cp.SkinURL)
-	}
-
-	if !player.HeadExists(config.Get().OutputDir, cp.Name) {
 		player.SaveHead(cp.Skin, config.Get().OutputDir, cp.Name, cp.SkinModel)
 	}
 
-	if !player.BodyExists(config.Get().OutputDir, cp.Name) {
+	if refresh || !player.BodyExists(config.Get().OutputDir, cp.Name) {
+		cp.Skin = player.GetSkin(cp.SkinURL)
 		player.SaveBody(cp.Skin, config.Get().OutputDir, cp.Name, cp.SkinModel)
 	}
 }

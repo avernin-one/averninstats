@@ -28,7 +28,7 @@ type Data struct {
 	SkinModel string `json:"-"`
 }
 
-type playerMetadata struct {
+type Metadata struct {
 	Textures struct {
 		Skin struct {
 			URL      string `json:"url"`
@@ -39,7 +39,7 @@ type playerMetadata struct {
 	} `json:"textures"`
 }
 
-// Fetch retrieves profile and skin metadata for uuid from the Mojang API.
+// Retrieves profile and skin metadata for uuid from the Mojang API.
 // queryDelay is the number of seconds to sleep after the request.
 func Fetch(uuid string, queryDelay int) (Data, error) {
 	url := fmt.Sprintf("https://sessionserver.mojang.com/session/minecraft/profile/%s", uuid)
@@ -62,7 +62,7 @@ func Fetch(uuid string, queryDelay int) (Data, error) {
 		}
 	}
 
-	var meta playerMetadata
+	var meta Metadata
 	if encodedTexture != "" {
 		decoded, err := base64.StdEncoding.DecodeString(encodedTexture)
 		if err != nil {

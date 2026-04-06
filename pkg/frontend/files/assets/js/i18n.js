@@ -50,7 +50,7 @@ export function translate(key) {
   const map = _cache.get(_currentLang);
 
   if (map && map.has(key)) {
-    return map.get(key);
+    return titleCase(map.get(key));
   }
 
   return titleCase(key);

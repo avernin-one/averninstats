@@ -55,7 +55,7 @@ function scrollToSection(id) {
 }
 
 function setTitle(page) {
-  document.title = page ? `${title} - ${page}` : title;
+  document.title = page ? `${title} > ${page}` : title;
 }
 
 export function renderIndex() {
@@ -219,7 +219,7 @@ export async function renderStats(category, statName) {
     statName = manifest[0].id;
   }
 
-  setTitle(`${titleCase(category)} - ${translate(statName)}`);
+  setTitle(`${titleCase(category)} > ${translate(statName)}`);
   setActiveNav(category);
   setActiveToc(statName);
 
@@ -286,7 +286,7 @@ export async function renderPlayers(playerName = null) {
     return;
   }
 
-  setTitle(`Player - ${playerName}`);
+  setTitle(`Player > ${playerName}`);
   renderLoading(playerName);
 
   let data;

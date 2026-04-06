@@ -1,7 +1,7 @@
 package processor
 
-// manifest.go - writes _manifest.json files for each output category.
-// The frontend has no directory listing, so it needs a manifest to know
+// Writes .index.json files for each output category.
+// The frontend probably has no directory listing, so it needs a index to know
 // which stat/player JSON files exist.
 
 import (
@@ -15,18 +15,18 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const manifestFileName = "_manifest.json"
+const indexFileName = ".index.json"
 
-// WriteManifests writes _manifest.json files into each category output directory.
+// Writes .index.json files into each category output directory.
 // Must be called after Flush so all JSON files are already written.
-func (p *Processor) WriteManifests() {
-	p.writeHighscoreManifest()
-	p.writePlayerManifest()
-	p.writeStatsManifest()
+func (p *Processor) WriteIndexes() {
+	p.writeHighscoreIndex()
+	p.writePlayerIndex()
+	p.writeStatsIndex()
 }
 
-func (p *Processor) writeHighscoreManifest() {
-	outFile := filepath.Join(config.Get().OutputDir, cache.TypeHighscore, manifestFileName)
+func (p *Processor) writeHighscoreIndex() {
+	outFile := filepath.Join(config.Get().OutputDir, cache.TypeHighscore, indexFileName)
 
 	names := make([]string, 0, len(p.Highscores))
 	for name := range p.Highscores {
@@ -36,13 +36,13 @@ func (p *Processor) writeHighscoreManifest() {
 	sort.Strings(names)
 
 	if err := utils.SaveJSONFile(outFile, names); err != nil {
-		log.Error().Err(err).Str("category", cache.TypeHighscore).Msg("failed to write highscore manifest file")
+		log.Error().Err(err).Str("category", cache.TypeHighscore).Msg("failed to write highscore index file")
 	}
 }
 
-func (p *Processor) writeStatsManifest() {
+func (p *Processor) writeStatsIndex() {
 	for category, data := range p.Scores {
-		outFile := filepath.Join(config.Get().OutputDir, category, manifestFileName)
+		outFile := filepath.Join(config.Get().OutputDir, category, indexFileName)
 
 		names := make([]string, 0, len(data))
 		for name := range data {
@@ -52,13 +52,13 @@ func (p *Processor) writeStatsManifest() {
 		sort.Strings(names)
 
 		if err := utils.SaveJSONFile(outFile, names); err != nil {
-			log.Error().Err(err).Str("category", category).Msg("failed to write manifest file")
+			log.Error().Err(err).Str("category", category).Msg("failed to write stats index file")
 		}
 	}
 }
 
-func (p *Processor) writePlayerManifest() {
-	outFile := filepath.Join(config.Get().OutputDir, cache.TypePlayer, manifestFileName)
+func (p *Processor) writePlayerIndex() {
+	outFile := filepath.Join(config.Get().OutputDir, cache.TypePlayer, indexFileName)
 
 	// we can't use strings.Sort() here cause it is case-sensitive and will not
 	// sort as expected.
@@ -67,7 +67,7 @@ func (p *Processor) writePlayerManifest() {
 	})
 
 	if err := utils.SaveJSONFile(outFile, p.PlayerNames); err != nil {
-		log.Error().Err(err).Str("category", cache.TypePlayer).Msg("failed to write player manifest file")
+		log.Error().Err(err).Str("category", cache.TypePlayer).Msg("failed to write player index file")
 	}
 }
 

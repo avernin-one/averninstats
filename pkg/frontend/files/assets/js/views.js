@@ -121,11 +121,11 @@ function renderError(message) {
 async function renderToc(category, doTranslate = true) {
   const toc = document.getElementById("toc-list");
 
-  // Load manifest if not cached
+  // Load index if not cached
   if (!tocs[category]) {
     try {
-      const manifest = await fetchJSON(`${category}/_manifest.json`);
-      const tocItems = manifest
+      const index = await fetchJSON(`${category}/.index.json`);
+      const tocItems = index
         .map((name) => ({
           id: name,
           name: doTranslate ? translate(name) : name,
@@ -135,7 +135,7 @@ async function renderToc(category, doTranslate = true) {
 
       tocs[category] = tocItems;
     } catch (err) {
-      renderError(`Could not load ${category} manifest.`);
+      renderError(`Could not load ${category} index.`);
       console.error(err);
       return;
     }
@@ -168,7 +168,7 @@ export async function renderHighscore(stat = null) {
   setTitle("Highscore");
   setActiveNav("highscore");
 
-  let manifest = await renderToc("highscore");
+  let index = await renderToc("highscore");
   let site = document.querySelector(`.stat-detail[data-id="highscore"]`);
 
   if (site == null) {
@@ -204,7 +204,7 @@ export async function renderHighscore(stat = null) {
     url = `#/highscore/${stat}`;
   }
 
-  scrollToSection(stat ?? manifest[0].id);
+  scrollToSection(stat ?? index[0].id);
 
   globalThis.history.replaceState(this, "", url);
 }
@@ -213,10 +213,10 @@ export async function renderHighscore(stat = null) {
 // Stats
 // ---------------------------------------------------------------------------
 export async function renderStats(category, statName) {
-  let manifest = await renderToc(category);
+  let index = await renderToc(category);
 
   if (statName == null) {
-    statName = manifest[0].id;
+    statName = index[0].id;
   }
 
   setTitle(`${titleCase(category)} > ${translate(statName)}`);
@@ -272,14 +272,14 @@ export async function renderStats(category, statName) {
 export async function renderPlayers(playerName = null) {
   setActiveNav("player");
 
-  let manifest = await renderToc("player", false);
+  let index = await renderToc("player", false);
 
   if (playerName == null) {
     setTitle("Player");
 
     render(
       Mustache.render(T.get("page-player"), {
-        players: manifest.sort(() => Math.random() - 0.5),
+        players: index.sort(() => Math.random() - 0.5),
       }),
     );
 

@@ -17,7 +17,7 @@ import { fetchJSON, titleCase } from "./utils.js";
 // ---------------------------------------------------------------------------
 
 let _currentLang = "en-gb";
-let _manifest = null;
+let _index = null;
 
 // Loaded translations: langCode -> Map<key, displayName>
 const _cache = new Map();
@@ -29,19 +29,19 @@ const _changeListeners = [];
 // Public API
 // ---------------------------------------------------------------------------
 
-// Loads the i18n manifest and the default language.
+// Loads the i18n index and the default language.
 // Must be called once at startup before translate() is used.
 export async function initI18n() {
   try {
-    _manifest = await fetchJSON("i18n/_manifest.json");
+    _index = await fetchJSON("i18n/.index.json");
   } catch {
-    _manifest = { languages: [{ code: "en-gb" }] };
+    _index = { languages: [{ code: "en-gb" }] };
   }
 
   _currentLang = "en-gb";
   await _load(_currentLang);
 
-  return _manifest;
+  return _index;
 }
 
 // Returns the display name for a Minecraft key in the current language.
@@ -61,10 +61,10 @@ export function currentLang() {
   return _currentLang;
 }
 
-// Returns the language list from the manifest.
+// Returns the language list from the index.
 export function availableLanguages() {
-  if (_manifest && _manifest.languages) {
-    return _manifest.languages;
+  if (_index && _index.languages) {
+    return _index.languages;
   }
   return [];
 }

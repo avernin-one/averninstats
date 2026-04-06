@@ -96,8 +96,8 @@ func Run() (*cache.Lookup, error) {
 		log.Error().Err(err).Msg("failed to persist lookup cache")
 	}
 
-	if err := writeManifest(languages); err != nil {
-		log.Error().Err(err).Msg("failed to write i18n manifest")
+	if err := writeIndex(languages); err != nil {
+		log.Error().Err(err).Msg("failed to write i18n index file")
 	}
 
 	return l, nil
@@ -185,9 +185,9 @@ func writeProcessed(name string, raw map[string]string) error {
 	return nil
 }
 
-// writeManifest writes i18n/_manifest.json listing all available languages.
-func writeManifest(languages []string) error {
-	path := filepath.Join(config.Get().I18nDir(), "_manifest.json")
+// Writes i18n/.index.json listing all available languages.
+func writeIndex(languages []string) error {
+	path := filepath.Join(config.Get().I18nDir(), ".index.json")
 	return utils.SaveJSONFile(path, languages)
 }
 

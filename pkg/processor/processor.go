@@ -110,7 +110,7 @@ func (p *Processor) Process() {
 		p.processStats(statsFile.Stats, uuid)
 	}
 
-	p.WriteManifests()
+	p.WriteIndexes()
 	p.WriteStats()
 	p.WriteHighscore()
 }

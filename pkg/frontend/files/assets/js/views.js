@@ -15,14 +15,14 @@ const SCROLL_OPTIONS = {
 let tocs = [];
 let title = "";
 
-// Waits for the browser to paint before measuring table widths.
+// Waits for the browser to draw before measuring table widths.
 function scheduleAlign(scope) {
   requestAnimationFrame(() => alignTables(scope));
 }
 
-// ---------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Page-level helpers
-// ---------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 function setActiveNav(id) {
   const links = document.querySelectorAll(".nav-link");
@@ -148,22 +148,26 @@ async function renderToc(category, doTranslate = true) {
   }
 
   // Attach search event listener
-  const searchInput = document.getElementById("toc-search");
-  searchInput.value = "";
-  searchInput.addEventListener("input", () => {
-    const query = searchInput.value.toLowerCase();
+  const handleSearch = (event) => {
+    const query = event.target.value.toLowerCase();
     const filteredItems = tocs[category].filter((item) =>
       item.name.toLowerCase().includes(query),
     );
     toc.innerHTML = Mustache.render(T.get("toc-list"), filteredItems);
-  });
+  };
+
+  const searchInput = document.getElementById("toc-search");
+
+  searchInput.value = "";
+  searchInput.removeEventListener("input", handleSearch);
+  searchInput.addEventListener("input", handleSearch);
 
   return tocs[category];
 }
 
-// ---------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Highscore
-// ---------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 export async function renderHighscore(stat = null) {
   setTitle("Highscore");
   setActiveNav("highscore");
@@ -176,20 +180,7 @@ export async function renderHighscore(stat = null) {
     try {
       renderLoading("highscore");
       data = await fetchJSON(`highscore/highscore.json`);
-
-      data = Object.entries(data)
-        .sort(([a], [b]) => a.localeCompare(b)) // sort alphabetic ascending
-        .map(([id, scores]) => ({
-          id: id,
-          title: translate(id),
-          scores: Object.entries(scores)
-            .sort(([a], [b]) => Number(b) - Number(a)) // sort descending
-            .map(([score, players], index) => ({
-              rank: index + 1,
-              score: formatValue(id, score),
-              players: players,
-            })),
-        }));
+      data = formatHighscoreStats(data);
     } catch (err) {
       console.error(`Failed to fetch highscore data`, err);
     }
@@ -209,9 +200,9 @@ export async function renderHighscore(stat = null) {
   globalThis.history.replaceState(this, "", url);
 }
 
-// ---------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Stats
-// ---------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 export async function renderStats(category, statName) {
   let index = await renderToc(category);
 
@@ -242,13 +233,7 @@ export async function renderStats(category, statName) {
     let entry = {
       id: elem,
       name: translate(elem),
-      scores: Object.entries(data[elem])
-        .sort(([a], [b]) => Number(b) - Number(a))
-        .map(([score, players], index) => ({
-          rank: index + 1,
-          score: formatValue(elem, score),
-          players: players,
-        })),
+      scores: formatScores(data[elem], elem),
     };
 
     sections.push(entry);
@@ -266,9 +251,9 @@ export async function renderStats(category, statName) {
   globalThis.history.replaceState(this, "", url);
 }
 
-// ---------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // Players
-// ---------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 export async function renderPlayers(playerName = null) {
   setActiveNav("player");
 
@@ -297,14 +282,88 @@ export async function renderPlayers(playerName = null) {
     return;
   }
 
-  data.stats = Object.entries(data.stats)
+  data.stats = formatPlayerStats(data.stats);
+  data.scores = formatPlayerScores(data.scores);
+
+  render(Mustache.render(T.get("page-player-profile"), data));
+  scheduleAlign(".player-profile");
+  setActiveToc(playerName);
+}
+
+function formatHighscoreStats(data) {
+  return Object.entries(data)
+    .sort(([a], [b]) => a.localeCompare(b)) // sort alphabetic ascending
+    .map(([id, scores]) => ({
+      id: id,
+      title: translate(id),
+      scores: formatScores(scores, id),
+    }));
+}
+
+/*
+  Formats the input data from:
+
+  {
+    "2": [
+      "PlayerA"
+    ],
+    "3": [
+      "PlayerB"
+    ],
+    "8": [
+      "PlayerB",
+      "PlayerC"
+    ]
+  }
+
+  to:
+
+  [
+    {
+      "rank": 1,
+      "score": "8",
+      "players": [
+        "PlayerA"
+      ]
+    },
+    {
+      "rank": 2,
+      "score": "3",
+      "players": [
+        "PlayerB"
+      ]
+    },
+    {
+      "rank": 3,
+      "score": "2",
+      "players": [
+        "PlayerB",
+        "PlayerC"
+      ]
+    }
+  ]
+*/
+function formatScores(data, id) {
+  return Object.entries(data)
+    .sort(([a], [b]) => Number(b) - Number(a))
+    .map(([score, players], index) => ({
+      rank: index + 1,
+      score: formatValue(id, score),
+      players: players,
+    }));
+}
+
+function formatPlayerStats(data) {
+  return Object.entries(data)
     .map(([key, value]) => ({
       key: translate(key),
       value: formatValue(key, value),
     }))
     .sort((a, b) => a.key.localeCompare(b.key));
+}
 
-  data.scores = Object.entries(data.scores)
+function formatPlayerScores(data) {
+  return Object.entries(data)
     .map(([cat, actions]) => ({
       category: translate(cat),
       actions: Object.entries(actions)
@@ -321,8 +380,4 @@ export async function renderPlayers(playerName = null) {
         .sort((a, b) => a.action.localeCompare(b.action)),
     }))
     .sort((a, b) => a.category.localeCompare(b.category));
-
-  render(Mustache.render(T.get("page-player-profile"), data));
-  scheduleAlign(".player-profile");
-  setActiveToc(playerName);
 }

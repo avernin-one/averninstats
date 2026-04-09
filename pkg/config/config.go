@@ -42,6 +42,10 @@ type Config struct {
 	LastCheckJitter     int  `yaml:"lastCheckJitter"`
 	QueryDelay          int  `yaml:"queryDelay"`
 	NoDelete            bool `yaml:"noDelete"`
+
+	// Language
+	Languages     []string `yaml:"languages"`
+	ListLanguages bool     `yaml:"listLanguages"`
 }
 
 const i18nDir = "i18n"
@@ -76,28 +80,37 @@ func Init() *Config {
 
 	pflag.CommandLine = pflag.NewFlagSet(os.Args[0], pflag.ExitOnError)
 
+	// General
 	pflag.BoolVar(&cfg.Help, "help", false, "Print this help message and exit")
 	pflag.BoolVar(&cfg.Version, "version", false, "Print version information and exit")
 	pflag.StringVar(&cfg.Config, "config", "", "Path to a YAML config file")
 
+	// Logging
+	pflag.BoolVar(&cfg.LogDebug, "log-debug", false, "Enable debug logging")
+	pflag.BoolVar(&cfg.LogJson, "log-json", false, "Enable JSON log format")
+	pflag.BoolVar(&cfg.LogNoColor, "log-no-color", false, "Disable log colors")
+
+	// Folders
 	pflag.StringVar(&cfg.OutputDir, "output-dir", "./output", "Directory for output files")
 	pflag.StringVar(&cfg.CacheDir, "cache-dir", "./cache", "Directory for cache files")
 	pflag.StringVar(&cfg.StatsSourceDir, "stats-source-dir", "./stats", "Directory with per-player stats JSON files")
 	pflag.BoolVar(&cfg.Minify, "minify", true, "Minify output files")
 
-	pflag.BoolVar(&cfg.LogDebug, "log-debug", false, "Enable debug logging")
-	pflag.BoolVar(&cfg.LogJson, "log-json", false, "Enable JSON log format")
-	pflag.BoolVar(&cfg.LogNoColor, "log-no-color", false, "Disable log colors")
-
+	// Minecraft
 	pflag.StringVar(&cfg.MinecraftVersion, "minecraft-version", "1.21.11", "Target Minecraft version")
 
+	// Stats
 	pflag.IntVar(&cfg.NumHighscores, "num-highscores", 10, "Global highscore list size per stat")
 	pflag.IntVar(&cfg.NumPlayerHighscores, "num-player-highscores", 5, "Per-player top-N scores per category")
 	pflag.IntVar(&cfg.MinPlayTime, "min-play-time", 10, "Minimum playtime in minutes to include a player")
 	pflag.IntVar(&cfg.CacheMaxAge, "cache-max-age", 336, "Max cache age in hours before renewal")
 	pflag.IntVar(&cfg.LastCheckJitter, "last-check-jitter", 96, "Random jitter in hours added to cache expiry")
 	pflag.IntVar(&cfg.QueryDelay, "query-delay", 2, "Seconds between Mojang API requests (min 2)")
-	pflag.BoolVar(&cfg.NoDelete, "no-delete", false, "Keep existing output files instead of clearing them")
+	pflag.BoolVar(&cfg.NoDelete, "no-delete", false, "Keep existing output files instead of clearing them") // unused
+
+	// Languages
+	pflag.StringSliceVar(&cfg.Languages, "languages", []string{"en-gb"}, "Languages used in frontend for translations")
+	pflag.BoolVar(&cfg.ListLanguages, "list-languages", false, "List available languages and exit")
 
 	pflag.Parse()
 

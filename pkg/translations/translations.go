@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -34,6 +35,10 @@ type assetIndex struct {
 		Size int    `json:"size"`
 	} `json:"objects"`
 }
+
+const (
+	langPrefix = "minecraft/lang/"
+)
 
 var (
 	// Classifies a raw Mojang key into block/item/entity/stat.
@@ -68,15 +73,27 @@ func Run() (*cache.Lookup, error) {
 		return nil, err
 	}
 
-	log.Info().Str("version", config.Get().MinecraftVersion).Msg("processing language files")
+	if config.Get().ListLanguages {
+		listLanguages(*index)
+	}
+
+	log.Info().
+		Str("version", config.Get().MinecraftVersion).
+		Msg("processing language files")
 
 	l := &cache.Lookup{}
-	const langPrefix string = "minecraft/lang/"
-
-	var languages []string
+	languages := []string{}
 
 	for key, obj := range index.Objects {
-		processLanguage(l, &languages, key, obj.Hash, langPrefix)
+		processLanguage(l, &languages, key, obj.Hash)
+	}
+
+	if len(languages) == 0 {
+		log.Fatal().
+			Strs("configures_languages", config.Get().Languages).
+			Msg("no configured languages could be processed." +
+				"Use --list-languages to get a list of available" +
+				"languages and update your parameters")
 	}
 
 	if l.AnyEmpty() {
@@ -103,17 +120,26 @@ func Run() (*cache.Lookup, error) {
 	return l, nil
 }
 
-func processLanguage(l *cache.Lookup, languages *[]string, key, hash, langPrefix string) {
+func processLanguage(l *cache.Lookup, languages *[]string, key string, hash string) {
 	if !strings.HasPrefix(key, langPrefix) {
 		return
 	}
 
-	name := langName(key, langPrefix)
+	name := langName(key)
+
+	if !slices.Contains(config.Get().Languages, name) {
+		log.Debug().
+			Str("language", name).
+			Strs("configured_langues", config.Get().Languages).
+			Msg("skipping not configured language")
+
+		return
+	}
 
 	// Fetch from raw cache or download.
 	raw, err := getRaw(name, hash)
 	if err != nil {
-		log.Error().Err(err).Str("language", name).Msg("failed to get language, skipping")
+		log.Fatal().Err(err).Str("language", name).Msg("failed to get language, skipping")
 		return
 	}
 
@@ -271,8 +297,8 @@ func fetchAssetIndex(minecraftVersion string) (*assetIndex, error) {
 // ---------------------------------------------------------------------------
 
 // langName converts an asset index key like "minecraft/lang/en_gb.json" to "en-gb".
-func langName(key, prefix string) string {
-	name := strings.TrimPrefix(key, prefix)
+func langName(key string) string {
+	name := strings.TrimPrefix(key, langPrefix)
 	name = strings.ReplaceAll(name, "_", "-")
 	name = strings.TrimSuffix(name, filepath.Ext(name))
 	return name
@@ -354,4 +380,22 @@ func populateLookup(l *cache.Lookup, raw map[string]string) {
 			log.Warn().Str("prefix", match[1]).Str("key", key).Msg("unknown key prefix")
 		}
 	}
+}
+
+func listLanguages(index assetIndex) {
+	keys := []string{}
+	for key := range index.Objects {
+		if !strings.HasPrefix(key, langPrefix) {
+			continue
+		}
+
+		keys = append(keys, langName(key))
+	}
+
+	slices.Sort(keys)
+	for _, key := range keys {
+		fmt.Println(key)
+	}
+
+	os.Exit(0)
 }

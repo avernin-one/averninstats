@@ -292,12 +292,12 @@ export async function renderPlayers(playerName = null) {
 
 function formatHighscoreStats(data) {
   return Object.entries(data)
-    .sort(([a], [b]) => a.localeCompare(b)) // sort alphabetic ascending
     .map(([id, scores]) => ({
       id: id,
       title: translate(id),
       scores: formatScores(scores, id),
-    }));
+    }))
+    .sort((a, b) => a.title.localeCompare(b.title)); // sort alphabetic ascending;
 }
 
 /*

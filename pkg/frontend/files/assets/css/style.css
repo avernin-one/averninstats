@@ -148,6 +148,24 @@ h1, h2, h3, h4, h5, h6 {
   min-height: 0;
 }
 
+#languageSwitcher:hover {
+  cursor: pointer;
+}
+
+#language {
+  display: none;
+  position: absolute;
+  right: 1rem;
+  margin-top: .5rem;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 0.1rem 0.6rem;
+  outline: none;
+  font-family: "Source Code Pro", monospace;
+}
+
 /* ---- Sidebar TOC ----------------------------------------- */
 .toc {
   background: var(--bg-surface);

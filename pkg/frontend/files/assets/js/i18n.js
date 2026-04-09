@@ -16,14 +16,10 @@ import { fetchJSON, titleCase } from "./utils.js";
 // State
 // ---------------------------------------------------------------------------
 
-let _currentLang = "en-gb";
-let _index = null;
+let current = "";
+let index = [];
 
-// Loaded translations: langCode -> Map<key, displayName>
-const _cache = new Map();
-
-// Callbacks fired when the language changes.
-const _changeListeners = [];
+const cache = new Map();
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -33,21 +29,69 @@ const _changeListeners = [];
 // Must be called once at startup before translate() is used.
 export async function initI18n() {
   try {
-    _index = await fetchJSON("i18n/.index.json");
-  } catch {
-    _index = { languages: [{ code: "en-gb" }] };
+    index = await fetchJSON("/i18n/.index.json");
+  } catch (err) {
+    index = ["unknown"];
+    console.error(err);
   }
 
-  _currentLang = "en-gb";
-  await _load(_currentLang);
+  index.sort();
+  current = localStorage.getItem("lang") ?? index[0];
+  await load(current);
 
-  return _index;
+  const langSelector = document.querySelector("#language");
+  const languageSwitcher = document.querySelector("#languageSwitcher");
+
+  const translate = new Intl.DisplayNames([current], { type: "language" });
+
+  const getDisplayName = (code) => {
+    try {
+      return translate.of(code) || code;
+    } catch {
+      return code;
+    }
+  };
+
+  index
+    .map((code) => ({ id: code, name: getDisplayName(code) }))
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .forEach(({ id, name }) => {
+      const option = document.createElement("option");
+      option.value = id;
+      option.textContent = name;
+      option.selected = id === current;
+      langSelector.appendChild(option);
+    });
+
+  const showSelector = () => {
+    langSelector.style.display = "block";
+    langSelector.showPicker();
+  };
+
+  const hideSelector = () => {
+    langSelector.style.display = "none";
+  };
+
+  languageSwitcher.addEventListener("click", () => {
+    langSelector.style.display === "block" ? hideSelector() : showSelector();
+  });
+
+  document.addEventListener("mousedown", (e) => {
+    const clickedOutside =
+      !langSelector.contains(e.target) && e.target !== languageSwitcher;
+    if (clickedOutside) hideSelector();
+  });
+
+  langSelector.addEventListener("change", (e) => {
+    setLanguage(e.target.value);
+    hideSelector();
+  });
 }
 
 // Returns the display name for a Minecraft key in the current language.
 // Falls back to title-casing the key if no translation exists.
 export function translate(key) {
-  const map = _cache.get(_currentLang);
+  const map = cache.get(current);
 
   if (map && map.has(key)) {
     return titleCase(map.get(key));
@@ -58,13 +102,13 @@ export function translate(key) {
 
 // Returns the current language code, e.g. "en-gb".
 export function currentLang() {
-  return _currentLang;
+  return current;
 }
 
 // Returns the language list from the index.
 export function availableLanguages() {
-  if (_index && _index.languages) {
-    return _index.languages;
+  if (index && index.languages) {
+    return index.languages;
   }
   return [];
 }
@@ -72,39 +116,31 @@ export function availableLanguages() {
 // Switches to a new language, loading its file if not yet cached.
 // Fires all registered change listeners afterwards.
 export async function setLanguage(code) {
-  if (code === _currentLang) {
+  if (code === current) {
     return;
   }
 
-  await _load(code);
-  _currentLang = code;
+  await load(code);
+  current = code;
   localStorage.setItem("lang", code);
-
-  for (const fn of _changeListeners) {
-    fn(code);
-  }
-}
-
-// Registers a callback that fires whenever the language changes.
-// Use this to re-render the current view.
-export function onLanguageChange(fn) {
-  _changeListeners.push(fn);
+  globalThis.location.reload();
 }
 
 // ---------------------------------------------------------------------------
 // Internal
 // ---------------------------------------------------------------------------
 
-async function _load(code) {
-  if (_cache.has(code)) {
+async function load(language) {
+  if (cache.has(language)) {
     return;
   }
 
   try {
-    const raw = await fetchJSON(`i18n/${code}.json`);
-    _cache.set(code, new Map(Object.entries(raw)));
-  } catch {
+    const raw = await fetchJSON(`i18n/${language}.json`);
+    cache.set(language, new Map(Object.entries(raw)));
+  } catch (err) {
+    console.error(err);
     // File missing - store empty map so translate() falls back to titleCase.
-    _cache.set(code, new Map());
+    cache.set(language, new Map());
   }
 }

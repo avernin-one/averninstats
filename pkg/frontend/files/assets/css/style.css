@@ -18,8 +18,8 @@
   --accent-hover:#0075cf;
   --text:        #eaeaea;
   --text-muted:  #a0a8b8;
-  --border:      #002038;
-  --scrollbar:   #01579b;
+  --border:      var(--accent);
+  --scrollbar:   var(--accent);
 
   --gold:        #ffd700;
   --silver:      #c0c0c0;
@@ -58,6 +58,7 @@ body.light {
   --bg-card:     #b7daf8;
   --accent:      #1d80e4;
   --accent-hover:#0063c7;
+  --border:      var(--accent);
   --text:        #202020;
   --text-muted:  #5f6368;
   transition: 0.2s ease;
@@ -146,6 +147,34 @@ h1, h2, h3, h4, h5, h6 {
   display: grid;
   grid-template-columns: var(--toc-w) 1fr;
   min-height: 0;
+}
+
+#languageSwitcher:hover {
+  cursor: pointer;
+}
+
+#language {
+  display: none;
+  position: absolute;
+  right: 1rem;
+  margin-top: .5rem;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-surface);
+  color: var(--text);
+  font-family: "Source Code Pro", monospace;
+  list-style: none;
+}
+
+#language li {
+  padding: 0.1rem 0.6rem;
+}
+
+#language li:hover {
+  color: var(--text);
+  background: var(--bg-card);
+  cursor: pointer;
 }
 
 /* ---- Sidebar TOC ----------------------------------------- */

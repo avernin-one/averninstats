@@ -95,12 +95,13 @@ export function renderIndex() {
     applyMode(isLight);
   });
 
-  window.addEventListener("DOMContentLoaded", () => {
+  globalThis.addEventListener("DOMContentLoaded", () => {
     const stored = localStorage.getItem(lastModeKey);
 
     const isLight =
       stored === "light" ||
-      (!stored && window.matchMedia?.("(prefers-color-scheme: light)").matches);
+      (!stored &&
+        globalThis.matchMedia?.("(prefers-color-scheme: light)").matches);
 
     applyMode(isLight);
   });
@@ -292,12 +293,12 @@ export async function renderPlayers(playerName = null) {
 
 function formatHighscoreStats(data) {
   return Object.entries(data)
-    .sort(([a], [b]) => a.localeCompare(b)) // sort alphabetic ascending
     .map(([id, scores]) => ({
       id: id,
       title: translate(id),
       scores: formatScores(scores, id),
-    }));
+    }))
+    .sort((a, b) => a.title.localeCompare(b.title)); // sort alphabetic ascending;
 }
 
 /*

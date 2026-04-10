@@ -9,7 +9,6 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/avernin-one/averninstats/pkg/utils"
 	skin "github.com/mineatar-io/skin-render"
@@ -40,8 +39,7 @@ type Metadata struct {
 }
 
 // Retrieves profile and skin metadata for uuid from the Mojang API.
-// queryDelay is the number of seconds to sleep after the request.
-func Fetch(uuid string, queryDelay int) (Data, error) {
+func Fetch(uuid string) (Data, error) {
 	url := fmt.Sprintf("https://sessionserver.mojang.com/session/minecraft/profile/%s", uuid)
 
 	body, err := utils.NewHttpRequest(url)
@@ -80,7 +78,6 @@ func Fetch(uuid string, queryDelay int) (Data, error) {
 	d.SkinModel = meta.Textures.Skin.Metadata.Model
 
 	log.Info().Str("uuid", uuid).Str("name", d.Name).Msg("resolved UUID")
-	time.Sleep(time.Duration(queryDelay) * time.Second)
 
 	return d, nil
 }
@@ -107,7 +104,12 @@ func SaveHead(img image.Image, outputDir, playerName, playerModel string) {
 		return
 	}
 
-	rendered := skin.RenderFace(nrgba, skin.Options{Scale: 12, Overlay: true, Slim: playerModel == "slim", Square: true})
+	rendered := skin.RenderFace(nrgba, skin.Options{
+		Scale:   1,
+		Overlay: true,
+		Slim:    playerModel == "slim",
+		Square:  true,
+	})
 	if err := saveImage(rendered, path); err != nil {
 		log.Warn().Str("player", playerName).Err(err).Msg("unable to save head image")
 		return
@@ -127,7 +129,7 @@ func SaveBody(img image.Image, outputDir, playerName, playerModel string) {
 	}
 
 	rendered := skin.RenderBody(nrgba, skin.Options{
-		Scale:   10,
+		Scale:   7,
 		Overlay: true,
 		Slim:    playerModel == "slim",
 		Square:  false,

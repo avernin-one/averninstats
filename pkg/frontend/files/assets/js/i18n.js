@@ -104,7 +104,7 @@ export async function initI18n() {
 export function translate(key) {
   const map = cache.get(current);
 
-  if (map && map.has(key)) {
+  if (map?.key) {
     return titleCase(map.get(key));
   }
 
@@ -118,7 +118,7 @@ export function currentLang() {
 
 // Returns the language list from the index.
 export function availableLanguages() {
-  if (index && index.languages) {
+  if (index?.languages) {
     return index.languages;
   }
   return [];

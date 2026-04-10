@@ -1,0 +1,40 @@
+---
+name: 🚀 Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+env:
+  APP_NAME: averninstats
+
+jobs:
+  build:
+    uses: ./.github/workflows/build_jobs.yml
+
+  release:
+    if: "!contains(github.event.head_commit.message, 'skip ci')"
+    name: 🚀 Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 🔽 Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ${{ env.APP_NAME }}*
+          path: ${{ github.workspace }}/dist
+
+      - name: 🔍 Display downloaded files
+        run: |
+          echo "PWD: $(pwd)"
+          ls -R ${GITHUB_WORKSPACE}
+
+      - name: 🚀 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ github.workspace }}/dist/*/${{ env.APP_NAME }}-*

@@ -95,12 +95,13 @@ export function renderIndex() {
     applyMode(isLight);
   });
 
-  window.addEventListener("DOMContentLoaded", () => {
+  globalThis.addEventListener("DOMContentLoaded", () => {
     const stored = localStorage.getItem(lastModeKey);
 
     const isLight =
       stored === "light" ||
-      (!stored && window.matchMedia?.("(prefers-color-scheme: light)").matches);
+      (!stored &&
+        globalThis.matchMedia?.("(prefers-color-scheme: light)").matches);
 
     applyMode(isLight);
   });

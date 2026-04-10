@@ -21,13 +21,13 @@ func trimNamespace(key string) string {
 
 // Removes the lowest-scoring entries so at most max unique
 // score values are kept.
-func trimScoreList(list map[int][]string, max int) {
+func trimScoreList(list map[int][]string, keep int) {
 	keys := sortedKeys(list)
-	if len(keys) <= max {
+	if len(keys) <= keep {
 		return
 	}
 
-	for _, k := range keys[max:] {
+	for _, k := range keys[keep:] {
 		delete(list, k)
 	}
 }

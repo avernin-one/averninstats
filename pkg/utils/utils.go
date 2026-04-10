@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	// Mojang API allows 100 requests per Minute
+	// Mojang API allows 100 requests per minute.
 	limiter = rate.NewLimiter(rate.Every(time.Minute/95), 5)
 )
 

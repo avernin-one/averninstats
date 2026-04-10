@@ -58,5 +58,5 @@ func (l *Lookup) GetType(stat string) (string, error) {
 		return TypeEntity, nil
 	}
 
-	return "", fmt.Errorf(`Stat "%s" not found.`, stat)
+	return "", fmt.Errorf(`stat "%s" not found`, stat)
 }

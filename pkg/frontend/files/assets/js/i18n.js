@@ -31,18 +31,26 @@ export async function initI18n() {
   try {
     index = await fetchJSON("/i18n/.index.json");
   } catch (err) {
-    index = ["unknown"];
+    index = [];
     console.error(err);
   }
 
   index.sort();
-  current = localStorage.getItem("lang") ?? index[0];
+  current = localStorage.getItem("lang");
+  if (!index.includes(current)) {
+    current = index[0] || null;
+  }
+
   await load(current);
 
   const langSelector = document.querySelector("#language");
   const languageSwitcher = document.querySelector("#languageSwitcher");
 
-  const translate = new Intl.DisplayNames([current], { type: "language" });
+  const translate = new Intl.DisplayNames(current ?? [], {
+    type: "language",
+    style: "narrow",
+    fallback: "code",
+  });
 
   const getDisplayName = (code) => {
     try {
@@ -56,16 +64,20 @@ export async function initI18n() {
     .map((code) => ({ id: code, name: getDisplayName(code) }))
     .sort((a, b) => a.name.localeCompare(b.name))
     .forEach(({ id, name }) => {
-      const option = document.createElement("option");
-      option.value = id;
-      option.textContent = name;
-      option.selected = id === current;
-      langSelector.appendChild(option);
+      const li = document.createElement("li");
+      li.dataset.lang = id;
+      li.textContent = name;
+
+      li.addEventListener("click", (e) => {
+        setLanguage(e.target.dataset.lang);
+        hideSelector();
+      });
+
+      langSelector.appendChild(li);
     });
 
   const showSelector = () => {
     langSelector.style.display = "block";
-    langSelector.showPicker();
   };
 
   const hideSelector = () => {
@@ -76,16 +88,15 @@ export async function initI18n() {
     langSelector.style.display === "block" ? hideSelector() : showSelector();
   });
 
-  document.addEventListener("mousedown", (e) => {
+  langSelector.addEventListener("blur", (e) => {
+    hideSelector();
+  });
+
+  /*   document.addEventListener("mousedown", (e) => {
     const clickedOutside =
       !langSelector.contains(e.target) && e.target !== languageSwitcher;
     if (clickedOutside) hideSelector();
-  });
-
-  langSelector.addEventListener("change", (e) => {
-    setLanguage(e.target.value);
-    hideSelector();
-  });
+  }); */
 }
 
 // Returns the display name for a Minecraft key in the current language.

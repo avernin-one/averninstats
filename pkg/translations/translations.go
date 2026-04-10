@@ -120,7 +120,7 @@ func Run() (*cache.Lookup, error) {
 	return l, nil
 }
 
-func processLanguage(l *cache.Lookup, languages *[]string, key string, hash string) {
+func processLanguage(l *cache.Lookup, languages *[]string, key, hash string) {
 	if !strings.HasPrefix(key, langPrefix) {
 		return
 	}

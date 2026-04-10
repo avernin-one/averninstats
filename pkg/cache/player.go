@@ -116,7 +116,7 @@ func (cp *CachedPlayer) IsExpired() bool {
 }
 
 func (pc *PlayerCache) fetchFromAPI(uuid string) (*CachedPlayer, error) {
-	data, err := player.Fetch(uuid, config.Get().QueryDelay)
+	data, err := player.Fetch(uuid)
 	if err != nil {
 		return nil, fmt.Errorf("fetch player %q: %w", uuid, err)
 	}
@@ -131,7 +131,7 @@ func (pc *PlayerCache) fetchFromAPI(uuid string) (*CachedPlayer, error) {
 }
 
 func (cp *CachedPlayer) Refresh() error {
-	data, err := player.Fetch(cp.UUID, config.Get().QueryDelay)
+	data, err := player.Fetch(cp.UUID)
 	if err != nil {
 		return err
 	}

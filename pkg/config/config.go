@@ -40,7 +40,6 @@ type Config struct {
 	MinPlayTime         int  `yaml:"minPlayTime"`
 	CacheMaxAge         int  `yaml:"cacheMaxAge"`
 	LastCheckJitter     int  `yaml:"lastCheckJitter"`
-	QueryDelay          int  `yaml:"queryDelay"`
 	NoDelete            bool `yaml:"noDelete"`
 
 	// Language
@@ -105,7 +104,6 @@ func Init() *Config {
 	pflag.IntVar(&cfg.MinPlayTime, "min-play-time", 10, "Minimum playtime in minutes to include a player")
 	pflag.IntVar(&cfg.CacheMaxAge, "cache-max-age", 336, "Max cache age in hours before renewal")
 	pflag.IntVar(&cfg.LastCheckJitter, "last-check-jitter", 96, "Random jitter in hours added to cache expiry")
-	pflag.IntVar(&cfg.QueryDelay, "query-delay", 2, "Seconds between Mojang API requests (min 2)")
 	pflag.BoolVar(&cfg.NoDelete, "no-delete", false, "Keep existing output files instead of clearing them") // unused
 
 	// Languages

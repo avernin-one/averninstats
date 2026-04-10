@@ -82,7 +82,7 @@ func Init() *Config {
 	// General
 	pflag.BoolVar(&cfg.Help, "help", false, "Print this help message and exit")
 	pflag.BoolVar(&cfg.Version, "version", false, "Print version information and exit")
-	pflag.StringVar(&cfg.Config, "config", "", "Path to a YAML config file")
+	pflag.StringVar(&cfg.Config, "config", "", "Path to a optional YAML config file")
 
 	// Logging
 	pflag.BoolVar(&cfg.LogDebug, "log-debug", false, "Enable debug logging")

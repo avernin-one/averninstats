@@ -48,7 +48,7 @@ export async function initI18n() {
 
   const translate = new Intl.DisplayNames(current ?? [], {
     type: "language",
-    style: "narrow",
+    style: "long",
     fallback: "code",
   });
 

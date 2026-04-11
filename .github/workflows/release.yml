@@ -48,10 +48,10 @@ jobs:
             DOCKER_PLATFORM: linux/386
     steps:
       - name: 🔽 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 🔽 Download Linux/${{ matrix.ARCH }} artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ env.APP_NAME }}-linux-${{ matrix.ARCH }}
           path: dist/
@@ -63,10 +63,10 @@ jobs:
           mv dist/${{ env.APP_NAME }}-linux-${{ matrix.ARCH }} dist/${{ env.APP_NAME }}
 
       - name: 🐳 Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: 🔐 Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -74,7 +74,7 @@ jobs:
 
       - name: 🏷️ Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
@@ -84,7 +84,7 @@ jobs:
 
       - name: 📦 Build and push arch-specific image
         id: docker_build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
@@ -105,7 +105,7 @@ jobs:
             > /tmp/digests/${{ matrix.ARCH }}
 
       - name: 🚚 Upload digest artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: digest-${{ matrix.ARCH }}
           path: /tmp/digests/${{ matrix.ARCH }}
@@ -123,14 +123,14 @@ jobs:
       packages: write
     steps:
       - name: 🔽 Download all digest artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: digest-*
           path: /tmp/digests
           merge-multiple: true
 
       - name: 🐳 Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: 🔐 Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -141,7 +141,7 @@ jobs:
 
       - name: 🏷️ Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
@@ -177,7 +177,7 @@ jobs:
       contents: write
     steps:
       - name: 🔽 Download all binary artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: ${{ env.APP_NAME }}*
           path: ${{ github.workspace }}/dist
@@ -210,7 +210,7 @@ jobs:
       actions: write
     steps:
       - name: 🧹 Delete all build & digest artifacts
-        uses: geekyeggo/delete-artifact@v5
+        uses: geekyeggo/delete-artifact@v6
         with:
           # Matches binary artifacts (averninstats-*) and digest helpers (digest-*)
           name: |

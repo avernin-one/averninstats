@@ -156,8 +156,8 @@ func processLanguage(l *cache.Lookup, languages *[]string, key, hash string) {
 	*languages = append(*languages, name)
 }
 
-// getRaw returns the raw language map for a given language. It first checks
-// the local raw cache; if not found it downloads from Mojang and caches it.
+// Returns the raw language map for a given language. It first checks
+// the local raw cache, if not found it downloads from Mojang and caches it.
 func getRaw(name, hash string) (map[string]string, error) {
 	rawPath := cache.RawLanguageFile(name)
 
@@ -174,8 +174,8 @@ func getRaw(name, hash string) (map[string]string, error) {
 	return downloadRaw(name, hash)
 }
 
-// downloadRaw fetches a raw language file from Mojang's resource CDN and
-// persists it to the raw cache.
+// Fetches a raw language file from Mojang's resource CDN and persists it to
+// the raw cache.
 func downloadRaw(name, hash string) (map[string]string, error) {
 	url := fmt.Sprintf("https://resources.download.minecraft.net/%s/%s", hash[:2], hash)
 
@@ -198,8 +198,8 @@ func downloadRaw(name, hash string) (map[string]string, error) {
 	return raw, nil
 }
 
-// writeProcessed strips irrelevant keys and writes the processed language
-// file to config.Get().I18nDir(). It always overwrites any existing file.
+// Strips irrelevant keys and writes the processed language file to
+// config.Get().I18nDir(). It always overwrites any existing file.
 func writeProcessed(name string, raw map[string]string) error {
 	outPath := filepath.Join(config.Get().I18nDir(), fmt.Sprintf("%s.json", name))
 	processed := stripTranslations(raw)

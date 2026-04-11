@@ -102,7 +102,7 @@ cd averninstats
 go build -o averninstats .
 ```
 
-#### Exectue
+#### Execute
 
 ```bash
 ./averninstats \

@@ -59,7 +59,7 @@ Usage of ./averninstats:
 
 ## How to use
 
-### Docker (recommended)
+### Docker
 
 ```bash
 docker pull ghcr.io/avernin-one/averninstats
@@ -81,19 +81,22 @@ The output directory will contain a ready-to-serve static website. Point any
 web server (nginx, caddy, apache) at it, or push it into a github repository
 and serve it via github-pages.
 
-### Download Release
+### Run Binary
 
-```bash
-@TODO
-```
+#### Download Release
 
-### From source
+Go to the [Release Page](https://github.com/avernin-one/averninstats/releases)
+and download the latest binary for your system.
+
+#### Build From source
 
 ```bash
 git clone https://github.com/avernin-one/averninstats
 cd averninstats
 go build -o averninstats .
 ```
+
+#### Exectue
 
 ```bash
 ./averninstats \

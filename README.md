@@ -80,7 +80,7 @@ docker run --rm \
   --stats-source-dir /stats \
   --output-dir /output \
   --cache-dir /cache \
-  --minecraft-version 1.21.1
+  --minecraft-version 1.21.11
 ```
 
 The output directory will contain a ready-to-serve static website. Point any
@@ -109,5 +109,5 @@ go build -o averninstats .
   --stats-source-dir /path/to/world/stats \
   --output-dir ./output \
   --cache-dir ./cache \
-  --minecraft-version 1.21.1
+  --minecraft-version 1.21.11
 ```

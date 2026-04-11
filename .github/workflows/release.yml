@@ -43,7 +43,7 @@ jobs:
           - ARCH: arm64
             DOCKER_PLATFORM: linux/arm64
           - ARCH: arm
-            DOCKER_PLATFORM: linux/arm/v7
+            DOCKER_PLATFORM: linux/arm/v5
           - ARCH: 386
             DOCKER_PLATFORM: linux/386
     steps:

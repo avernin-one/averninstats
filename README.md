@@ -12,6 +12,8 @@ per-item, per-entity breakdowns and individual player profiles.
 
 ## Preview
 
+Live Demo: [stats.avernin.one](https://stats.avernin.one) (hosted on github.com)
+
 <table>
   <tr>
     <th align="left">Highscore</th>

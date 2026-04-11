@@ -12,9 +12,24 @@ per-item, per-entity breakdowns and individual player profiles.
 
 ## Preview
 
-| Highscore                                                                                                                                                                                   | Player                                                                                                                                                                                      |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a href="https://github.com/user-attachments/assets/7e621ccf-720e-48bc-a97d-ebe314fe86b6"><img src="https://github.com/user-attachments/assets/7e621ccf-720e-48bc-a97d-ebe314fe86b6" /></a> | <a href="https://github.com/user-attachments/assets/eccaca99-32f9-458c-a516-11112fc4b064"><img src="https://github.com/user-attachments/assets/eccaca99-32f9-458c-a516-11112fc4b064" /></a> |
+<table>
+  <tr>
+    <th align="left">Highscore</th>
+    <th align="left">Player</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/user-attachments/assets/7e621ccf-720e-48bc-a97d-ebe314fe86b6">
+        <img src="https://github.com/user-attachments/assets/7e621ccf-720e-48bc-a97d-ebe314fe86b6" />
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/user-attachments/assets/eccaca99-32f9-458c-a516-11112fc4b064">
+        <img src="https://github.com/user-attachments/assets/eccaca99-32f9-458c-a516-11112fc4b064" />
+      </a>
+    </td>
+  </tr>
+</table>
 
 ## Command-Line Options
 

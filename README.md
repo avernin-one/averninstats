@@ -5,6 +5,10 @@
 ![Go version](https://img.shields.io/github/go-mod/go-version/avernin-one/averninstats)
 [![Go Reference](https://pkg.go.dev/badge/github.com/avernin-one/averninstats.svg)](https://pkg.go.dev/github.com/avernin-one/averninstats)
 
+![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=avernin-one_averninstats&metric=alert_status&token=c4cb303f5e9d2e0bbc748450c90db318779fe834)
+![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=avernin-one_averninstats&metric=security_rating&token=c4cb303f5e9d2e0bbc748450c90db318779fe834)
+![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=avernin-one_averninstats&metric=vulnerabilities&token=c4cb303f5e9d2e0bbc748450c90db318779fe834)
+
 A stats processor for Minecraft Java Edition servers. It reads the per-player
 stats JSON files that Minecraft writes to disk, resolves player names and skins
 via the Mojang API, and generates a static website with highscores, per-block,

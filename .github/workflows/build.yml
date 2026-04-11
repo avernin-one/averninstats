@@ -2,7 +2,7 @@
 name: 📦 Build Artifacts
 
 on:
-  workflow_call:
+  workflow_dispatch:
   pull_request:
     branches:
       - main
@@ -34,10 +34,10 @@ jobs:
             ARCH: arm
     steps:
       - name: 🔽 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: 🏗️ Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ env.GO_VERSION }}
 
@@ -50,8 +50,10 @@ jobs:
           export GOOS="${{ matrix.OS }}"
           export GOARCH="${{ matrix.ARCH }}"
 
+          [[ ${GOOS} == windows ]] && SUFFIX=".exe" || SUFFIX=""
+
           export APP_NAME="$(basename $(pwd))"
-          export BUILD="${APP_NAME}-${GOOS}-${GOARCH}"
+          export BUILD="${APP_NAME}-${GOOS}-${GOARCH}${SUFFIX}"
           export VERSION="$(git describe --tags --dirty  --always)"
           export GIT_COMMIT="$(git rev-parse --short HEAD)"
           export BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -59,20 +61,16 @@ jobs:
 
           echo "building: ${BUILD}"
 
-          go build -o dist/ -ldflags "-s -w -trimpath \
+          go build -trimpath -o dist/${BUILD} -ldflags "-s -w \
             -X '${PKG_PREFIX}/pkg/config.version=${VERSION}' \
             -X '${PKG_PREFIX}/pkg/config.gitCommit=${GIT_COMMIT}' \
             -X '${PKG_PREFIX}/pkg/config.buildDate=${BUILD_DATE}'" \
 
           echo "listing build... " && ls -lah dist/
+          echo "bin_name=${BUILD}" >> $GITHUB_OUTPUT
 
-          [[ ${GOOS} == windows ]] && SUFFIX=".exe" || SUFFIX=""
-          mv dist/${APP_NAME}${SUFFIX} dist/${BUILD}${SUFFIX}
-
-          echo "bin_name=${BUILD}${SUFFIX}" >> $GITHUB_OUTPUT
-
-      - name: 🚚 Upload Artifacts
-        uses: actions/upload-artifact@v4
+      - name: 🚚 Upload Artifact
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ steps.build.outputs.bin_name }}
           path: dist/

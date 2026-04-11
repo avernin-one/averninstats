@@ -33,6 +33,8 @@ jobs:
             ARCH: 386
           - OS: darwin
             ARCH: arm
+          - OS: windows
+            ARCH: arm
     steps:
       - name: 🔽 Checkout Repository
         uses: actions/checkout@v6

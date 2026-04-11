@@ -1,9 +1,8 @@
 # syntax=docker/dockerfile:1
-ARG OS
-ARG ARCH
+FROM gcr.io/distroless/static-debian12:nonroot
 
-FROM --platform=$OS/$ARCH debian
+ARG APP_NAME=averninstats
 
-COPY /dist/averninstats-$OS-$ARCH /app/averninstats
+COPY dist/${APP_NAME} /usr/local/bin/${APP_NAME}
 
-ENTRYPOINT /app/averninstats
+ENTRYPOINT ["/usr/local/bin/averninstats"]

@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM debian:13-slim
 
 ARG APP_NAME=averninstats
 

@@ -9,32 +9,211 @@ on:
 
 env:
   APP_NAME: averninstats
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # ----------------------------------------------------------------------------
+  #  Build binaries (reuses existing build workflow)
+  # ----------------------------------------------------------------------------
   build:
     uses: ./.github/workflows/build.yml
 
+  # ----------------------------------------------------------------------------
+  #  Build & push one Docker image per Linux architecture
+  # ----------------------------------------------------------------------------
+  docker:
+    name: 🐳 Docker (${{ matrix.ARCH }})
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false # let other arches finish so cleanup can collect them
+      matrix:
+        ARCH:
+          - amd64
+          - arm64
+          - arm
+          - 386
+        include:
+          - ARCH: amd64
+            DOCKER_PLATFORM: linux/amd64
+          - ARCH: arm64
+            DOCKER_PLATFORM: linux/arm64
+          - ARCH: arm
+            DOCKER_PLATFORM: linux/arm/v5
+          - ARCH: 386
+            DOCKER_PLATFORM: linux/386
+    steps:
+      - name: 🔽 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🔽 Download Linux/${{ matrix.ARCH }} artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-linux-${{ matrix.ARCH }}
+          path: dist/
+
+      - name: 🔑 Prepare binary
+        run: |
+          chmod +x dist/${{ env.APP_NAME }}-linux-${{ matrix.ARCH }}
+          # Rename to a fixed name so the Dockerfile stays generic
+          mv dist/${{ env.APP_NAME }}-linux-${{ matrix.ARCH }} dist/${{ env.APP_NAME }}
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🏷️ Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}-${{ matrix.ARCH }}
+            type=semver,pattern={{major}}.{{minor}}-${{ matrix.ARCH }}
+            type=sha,suffix=-${{ matrix.ARCH }}
+
+      - name: 📦 Build and push arch-specific image
+        id: docker_build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ matrix.DOCKER_PLATFORM }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            APP_NAME=${{ env.APP_NAME }}
+          # Do NOT load the cache from previous runs to avoid cross-arch pollution
+          cache-from: type=gha,scope=${{ matrix.ARCH }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.ARCH }}
+
+      - name: 📝 Save image digest
+        run: |
+          mkdir -p /tmp/digests
+          echo "${{ steps.docker_build.outputs.digest }}" \
+            > /tmp/digests/${{ matrix.ARCH }}
+
+      - name: 🚚 Upload digest artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-${{ matrix.ARCH }}
+          path: /tmp/digests/${{ matrix.ARCH }}
+          retention-days: 1
+
+  # ----------------------------------------------------------------------------
+  #  Combine per-arch images into one multi-arch manifest
+  # ----------------------------------------------------------------------------
+  docker-manifest:
+    name: 🐳 Docker Manifest
+    needs: docker
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: 🔽 Download all digest artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: digest-*
+          path: /tmp/digests
+          merge-multiple: true
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🏷️ Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: 🔗 Create and push multi-arch manifest
+        run: |
+          TAGS=$(echo "${{ steps.meta.outputs.tags }}" \
+            | tr '\n' ' ' \
+            | xargs -I{} echo "--tag {}")
+
+          DIGESTS=$(ls /tmp/digests \
+            | xargs -I{} cat /tmp/digests/{} \
+            | xargs -I{} echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@{}")
+
+          docker buildx imagetools create \
+            $(echo "${{ steps.meta.outputs.tags }}" | sed 's/^/--tag /') \
+            ${DIGESTS}
+
+  # ----------------------------------------------------------------------------
+  #  Create GitHub Release
+  # ----------------------------------------------------------------------------
   release:
     if: "!contains(github.event.head_commit.message, 'skip ci')"
     name: 🚀 Release
-    needs: build
+    needs:
+      - build
+      - docker-manifest
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: 🔽 Download artifacts
+      - name: 🔽 Download all binary artifacts
         uses: actions/download-artifact@v4
         with:
           pattern: ${{ env.APP_NAME }}*
           path: ${{ github.workspace }}/dist
+          merge-multiple: true
 
       - name: 🔍 Display downloaded files
         run: |
           echo "PWD: $(pwd)"
           ls -R ${GITHUB_WORKSPACE}
 
-      - name: 🚀 Release
+      - name: 🚀 Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            ${{ github.workspace }}/dist/*/${{ env.APP_NAME }}-*
+          files: ${{ github.workspace }}/dist/**/*
+
+  # ----------------------------------------------------------------------------
+  #  Cleanup - always runs, even on failure
+  # ----------------------------------------------------------------------------
+  cleanup:
+    name: 🧹 Cleanup Artifacts
+    # Run after all jobs that produce artifacts, regardless of their outcome
+    needs:
+      - build
+      - docker
+      - docker-manifest
+      - release
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: 🧹 Delete all build & digest artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          # Matches binary artifacts (averninstats-*) and digest helpers (digest-*)
+          name: |
+            ${{ env.APP_NAME }}-*
+            digest-*
+          failOnError: false

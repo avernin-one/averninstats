@@ -105,6 +105,16 @@ export function renderIndex() {
 
     applyMode(isLight);
   });
+
+  /*
+    MOVE THIS INTO FUNCTIONS
+  */
+
+  let tocButton = document.querySelector("#mobile-toc-toggle");
+  tocButton.addEventListener("click", () => {
+    let toc = document.querySelector("nav.toc");
+    toc.classList.toggle("mobile-hide");
+  });
 }
 
 function render(html) {

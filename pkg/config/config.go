@@ -142,8 +142,8 @@ func Init() *Config {
 		log.Logger = zerolog.New(os.Stdout).With().Caller().Timestamp().Logger()
 	}
 
-	readFile(cfg)
-	validate(cfg)
+	cfg.readFile()
+	cfg.validate()
 
 	return cfg
 }
@@ -153,7 +153,7 @@ func (c *Config) I18nDir() string {
 	return filepath.Join(c.OutputDir, i18nDir)
 }
 
-func readFile(c *Config) {
+func (c *Config) readFile() {
 	if c.Config == "" {
 		log.Warn().Msg("no config file specified")
 		return
@@ -170,7 +170,7 @@ func readFile(c *Config) {
 	}
 }
 
-func validate(c *Config) {
+func (c *Config) validate() {
 	dirs := []string{
 		c.OutputDir,
 		c.CacheDir,

@@ -13,14 +13,14 @@
 
   <nav class="topnav" aria-label="Site menu">
     <a href="#/highscore" class="logo">averninstats</a>
-
-    <ul class="nav-links">
-      <li><a href="#/highscore" class="nav-link" data-id="highscore">Highscore</a></li>
-      <li><a href="#/block" class="nav-link" data-id="block">Block</a></li>
-      <li><a href="#/item" class="nav-link" data-id="item">Item</a></li>
-      <li><a href="#/entity" class="nav-link" data-id="entity">Entity</a></li>
-      <li><a href="#/player" class="nav-link" data-id="player">Player</a></li>
-    </ul>
+    <button id="mobile-toc-toggle">☰</button>
+    <div class="nav-links">
+      <a href="#/highscore" class="nav-link" data-id="highscore">Highscore</a>
+      <a href="#/block" class="nav-link" data-id="block">Block</a>
+      <a href="#/item" class="nav-link" data-id="item">Item</a>
+      <a href="#/entity" class="nav-link" data-id="entity">Entity</a>
+      <a href="#/player" class="nav-link" data-id="player">Player</a>
+    </div>
 
     <div class="topnav-right">
       <ul class="ext-links"></ul>
@@ -34,7 +34,7 @@
 
   <div id="app">
     <div class="page-layout">
-      <nav class="toc" aria-label="TOC menu">
+      <nav class="toc mobile-hide" aria-label="TOC menu">
         <input id="toc-search" class="toc-search" type="search" placeholder="Filter..." aria-label="Filter stats">
         <ul id="toc-list" data-id=""></ul>
       </nav>

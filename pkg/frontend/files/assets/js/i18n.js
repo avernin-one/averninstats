@@ -88,15 +88,11 @@ export async function initI18n() {
     langSelector.style.display === "block" ? hideSelector() : showSelector();
   });
 
-  langSelector.addEventListener("blur", (e) => {
-    hideSelector();
-  });
-
-  /*   document.addEventListener("mousedown", (e) => {
+  document.addEventListener("mousedown", (e) => {
     const clickedOutside =
       !langSelector.contains(e.target) && e.target !== languageSwitcher;
     if (clickedOutside) hideSelector();
-  }); */
+  });
 }
 
 // Returns the display name for a Minecraft key in the current language.
@@ -104,7 +100,7 @@ export async function initI18n() {
 export function translate(key) {
   const map = cache.get(current);
 
-  if (map?.key) {
+  if (map?.has(key)) {
     return titleCase(map.get(key));
   }
 

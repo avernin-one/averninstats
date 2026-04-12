@@ -199,7 +199,7 @@ func downloadRaw(name, hash string) (map[string]string, error) {
 }
 
 // Strips irrelevant keys and writes the processed language file to
-// config.Get().I18nDir(). It always overwrites any existing file.
+// config.Get().I18nDir(). Currently it always overwrites any existing file.
 func writeProcessed(name string, raw map[string]string) error {
 	outPath := filepath.Join(config.Get().I18nDir(), fmt.Sprintf("%s.json", name))
 	processed := stripTranslations(raw)
@@ -211,7 +211,7 @@ func writeProcessed(name string, raw map[string]string) error {
 	return nil
 }
 
-// Writes i18n/.index.json listing all available languages.
+// Writes i18n/.index.json containing all available languages.
 func writeIndex(languages []string) error {
 	path := filepath.Join(config.Get().I18nDir(), ".index.json")
 	return utils.SaveJSONFile(path, languages)
@@ -231,8 +231,6 @@ func fetchAssetIndex(minecraftVersion string) (*assetIndex, error) {
 		}
 	}
 
-	// If the asset index is unavailable, the program can still run using cached
-	// lookups and previously processed i18n files, so this is a warning, not an error.
 	log.Warn().Str("version", minecraftVersion).Msg("asset index not found in cache, downloading")
 
 	body, err := utils.NewHttpRequest("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json")
@@ -296,7 +294,7 @@ func fetchAssetIndex(minecraftVersion string) (*assetIndex, error) {
 // Helpers
 // ---------------------------------------------------------------------------
 
-// langName converts an asset index key like "minecraft/lang/en_gb.json" to "en-gb".
+// Converts an asset index key like "minecraft/lang/en_gb.json" to "en-gb".
 func langName(key string) string {
 	name := strings.TrimPrefix(key, langPrefix)
 	name = strings.ReplaceAll(name, "_", "-")
@@ -304,7 +302,7 @@ func langName(key string) string {
 	return name
 }
 
-// loadRaw reads and decodes a raw language file from disk.
+// Reads and decodes a raw language file from disk.
 func loadRaw(path string) (map[string]string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -319,7 +317,7 @@ func loadRaw(path string) (map[string]string, error) {
 	return raw, nil
 }
 
-// stripTranslations keeps only block/item/entity/stat keys and strips their
+// Keeps only block/item/entity/stat keys and strips their
 // namespace prefix, cleaning up placeholder artifacts in the values.
 func stripTranslations(raw map[string]string) map[string]string {
 	out := make(map[string]string, len(raw))
@@ -354,7 +352,7 @@ func stripTranslations(raw map[string]string) map[string]string {
 	return out
 }
 
-// populateLookup fills a Lookup from the source language raw map.
+// Fills a Lookup from the source language raw map.
 func populateLookup(l *cache.Lookup, raw map[string]string) {
 	for key := range raw {
 		match := populateRe.FindStringSubmatch(key)
@@ -382,6 +380,8 @@ func populateLookup(l *cache.Lookup, raw map[string]string) {
 	}
 }
 
+// Get the available Languages from the assetIndex, sort them alphabetically,
+// print it to stdout and then exit.
 func listLanguages(index assetIndex) {
 	keys := []string{}
 	for key := range index.Objects {

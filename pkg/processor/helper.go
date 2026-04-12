@@ -7,7 +7,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Removes the "minecraft:" prefix from any given key and returns
+// Removes the "minecraft:" prefix from any given key and return
 // the stripped string back.
 func trimNamespace(key string) string {
 	if s, ok := strings.CutPrefix(key, "minecraft:"); ok {
@@ -42,6 +42,8 @@ func sortedKeys(list map[int][]string) []int {
 	return keys
 }
 
+// Loop over the available highscores and assign `medals` to the effective
+// player.
 func (p *Processor) setMedals(player *Player) {
 	for _, scoreList := range p.Highscores {
 		for rank, key := range sortedKeys(scoreList) {

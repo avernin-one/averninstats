@@ -100,7 +100,7 @@ export async function initI18n() {
 export function translate(key) {
   const map = cache.get(current);
 
-  if (map?.key) {
+  if (map?.has(key)) {
     return titleCase(map.get(key));
   }
 

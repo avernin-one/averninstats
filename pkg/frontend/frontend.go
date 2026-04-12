@@ -38,6 +38,11 @@ func New() *Frontend {
 }
 
 func (f *Frontend) Copy() {
+	if !config.Get().Frontend {
+		log.Warn().Msg("frontend generation is disabled and no files will be copied to the ouput directory")
+		return
+	}
+
 	err := fs.WalkDir(files, "files", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err

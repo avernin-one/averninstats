@@ -16,9 +16,10 @@ import (
 
 type Config struct {
 	// General
-	Help    bool
-	Version bool
-	Config  string
+	Help     bool
+	Version  bool
+	Config   string
+	Frontend bool
 
 	// Logging
 	LogDebug   bool `yaml:"logDebug"`
@@ -83,6 +84,7 @@ func Init() *Config {
 	pflag.BoolVar(&cfg.Help, "help", false, "Print this help message and exit")
 	pflag.BoolVar(&cfg.Version, "version", false, "Print version information and exit")
 	pflag.StringVar(&cfg.Config, "config", "", "Path to a optional YAML config file")
+	pflag.BoolVar(&cfg.Frontend, "frontend", true, "Copy frontend files to the configured output directory")
 
 	// Logging
 	pflag.BoolVar(&cfg.LogDebug, "log-debug", false, "Enable debug logging")

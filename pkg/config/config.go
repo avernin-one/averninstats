@@ -35,11 +35,12 @@ type Config struct {
 	MinecraftVersion string `yaml:"minecraftVersion"`
 
 	// Stats
-	NumHighscores       int `yaml:"numHighscores"`
-	NumPlayerHighscores int `yaml:"numPlayerHighscores"`
-	MinPlayTime         int `yaml:"minPlayTime"`
-	CacheMaxAge         int `yaml:"cacheMaxAge"`
-	LastCheckJitter     int `yaml:"lastCheckJitter"`
+	NumHighscores       int      `yaml:"numHighscores"`
+	NumPlayerHighscores int      `yaml:"numPlayerHighscores"`
+	MinPlayTime         int      `yaml:"minPlayTime"`
+	CacheMaxAge         int      `yaml:"cacheMaxAge"`
+	LastCheckJitter     int      `yaml:"lastCheckJitter"`
+	ExcludeUUIDs        []string `yaml:"excludeUUIDs"`
 
 	// Language
 	Languages     []string `yaml:"languages"`
@@ -55,7 +56,7 @@ var (
 	buildDate string
 )
 
-// Get returns the config.
+// Return the config and initialize it if necessary.
 func Get() *Config {
 	if cfg == nil {
 		Init()
@@ -63,7 +64,7 @@ func Get() *Config {
 	return cfg
 }
 
-// Init parses flags, env vars, and an optional config file. Must be called
+// Parses flags, env vars, and an optional config file. Must be called
 // exactly once at program startup before any other package uses config.Get().
 func Init() *Config {
 	cfg = &Config{}
@@ -103,6 +104,7 @@ func Init() *Config {
 	pflag.IntVar(&cfg.MinPlayTime, "min-play-time", 10, "Minimum playtime in minutes to include a player")
 	pflag.IntVar(&cfg.CacheMaxAge, "cache-max-age", 336, "Max cache age in hours before renewal")
 	pflag.IntVar(&cfg.LastCheckJitter, "last-check-jitter", 96, "Random jitter in hours added to cache expiry")
+	pflag.StringSliceVar(&cfg.ExcludeUUIDs, "exclude-uuids", []string{}, "Exclude UUIDs from being processed")
 
 	// Languages
 	pflag.StringSliceVar(&cfg.Languages, "languages", []string{"en-gb"}, "Languages used in frontend for translations")

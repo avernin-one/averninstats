@@ -110,6 +110,11 @@ func (p *Processor) Process() {
 }
 
 func (p *Processor) processStats(rawStats Stats, uuid string) {
+	if slices.Contains(config.Get().ExcludeUUIDs, uuid) {
+		log.Warn().Str("uuid", uuid).Msg("is excluded")
+		return
+	}
+
 	if !p.hasMinPlaytime(rawStats) {
 		log.Warn().Str("uuid", uuid).Msg("not enough playtime")
 		return

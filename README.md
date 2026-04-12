@@ -68,6 +68,13 @@ Usage of ./averninstats:
 
 ## How to use
 
+The output directory will contain a ready-to-serve static website. Point any
+web server (nginx, caddy, apache) at it, or push it into a github repository
+and serve it via github-pages.
+
+The `cache` directory should be persistent to avoid unnecessary API calls,
+downloads and rebuilding of the lookup maps.
+
 ### Docker
 
 ```bash
@@ -83,12 +90,9 @@ docker run --rm \
   --stats-source-dir /stats \
   --output-dir /output \
   --cache-dir /cache \
+  --languages=en-gb,de-de \
   --minecraft-version 1.21.11
 ```
-
-The output directory will contain a ready-to-serve static website. Point any
-web server (nginx, caddy, apache) at it, or push it into a github repository
-and serve it via github-pages.
 
 ### Run Binary
 
@@ -112,5 +116,6 @@ go build -o averninstats .
   --stats-source-dir /path/to/world/stats \
   --output-dir ./output \
   --cache-dir ./cache \
+  --languages=en-gb,de-de \
   --minecraft-version 1.21.11
 ```

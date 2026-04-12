@@ -35,12 +35,11 @@ type Config struct {
 	MinecraftVersion string `yaml:"minecraftVersion"`
 
 	// Stats
-	NumHighscores       int  `yaml:"numHighscores"`
-	NumPlayerHighscores int  `yaml:"numPlayerHighscores"`
-	MinPlayTime         int  `yaml:"minPlayTime"`
-	CacheMaxAge         int  `yaml:"cacheMaxAge"`
-	LastCheckJitter     int  `yaml:"lastCheckJitter"`
-	NoDelete            bool `yaml:"noDelete"`
+	NumHighscores       int `yaml:"numHighscores"`
+	NumPlayerHighscores int `yaml:"numPlayerHighscores"`
+	MinPlayTime         int `yaml:"minPlayTime"`
+	CacheMaxAge         int `yaml:"cacheMaxAge"`
+	LastCheckJitter     int `yaml:"lastCheckJitter"`
 
 	// Language
 	Languages     []string `yaml:"languages"`
@@ -104,7 +103,6 @@ func Init() *Config {
 	pflag.IntVar(&cfg.MinPlayTime, "min-play-time", 10, "Minimum playtime in minutes to include a player")
 	pflag.IntVar(&cfg.CacheMaxAge, "cache-max-age", 336, "Max cache age in hours before renewal")
 	pflag.IntVar(&cfg.LastCheckJitter, "last-check-jitter", 96, "Random jitter in hours added to cache expiry")
-	pflag.BoolVar(&cfg.NoDelete, "no-delete", false, "Keep existing output files instead of clearing them") // unused
 
 	// Languages
 	pflag.StringSliceVar(&cfg.Languages, "languages", []string{"en-gb"}, "Languages used in frontend for translations")

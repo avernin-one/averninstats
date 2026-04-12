@@ -18,7 +18,8 @@ per-item, per-entity breakdowns and individual player profiles.
 
 ## Live Demo
 
-You can view a live demo that is hosted on github pages here: [stats.avernin.one](https://stats.avernin.one)
+Website: [stats.avernin.one](https://stats.avernin.one)
+Github Repository: [averninstats-website](https://github.com/avernin-one/averninstats-website)
 
 <table>
   <tr>

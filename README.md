@@ -49,6 +49,7 @@ Usage of ./averninstats:
       --cache-dir string            Directory for cache files (default "./cache")
       --cache-max-age int           Max cache age in hours before renewal (default 336)
       --config string               Path to a optional YAML config file
+      --exclude-uuids strings       Exclude UUIDs from being processed
       --help                        Print this help message and exit
       --languages strings           Languages used in frontend for translations (default [en-gb])
       --last-check-jitter int       Random jitter in hours added to cache expiry (default 96)
@@ -59,7 +60,6 @@ Usage of ./averninstats:
       --min-play-time int           Minimum playtime in minutes to include a player (default 10)
       --minecraft-version string    Target Minecraft version (default "1.21.11")
       --minify                      Minify output files (default true)
-      --no-delete                   Keep existing output files instead of clearing them
       --num-highscores int          Global highscore list size per stat (default 10)
       --num-player-highscores int   Per-player top-N scores per category (default 5)
       --output-dir string           Directory for output files (default "./output")

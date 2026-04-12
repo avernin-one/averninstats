@@ -1,22 +1,24 @@
 # averninstats
 
+![Averninstats Badge](https://img.shields.io/badge/avernin-stats-blue?style=flat)
 ![Build Status](https://github.com/avernin-one/averninstats/actions/workflows/release.yml/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/avernin-one/averninstats)](https://goreportcard.com/report/github.com/avernin-one/averninstats)
 ![Go version](https://img.shields.io/github/go-mod/go-version/avernin-one/averninstats)
 [![Go Reference](https://pkg.go.dev/badge/github.com/avernin-one/averninstats.svg)](https://pkg.go.dev/github.com/avernin-one/averninstats)
-
 ![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=avernin-one_averninstats&metric=alert_status&token=c4cb303f5e9d2e0bbc748450c90db318779fe834)
 ![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=avernin-one_averninstats&metric=security_rating&token=c4cb303f5e9d2e0bbc748450c90db318779fe834)
 ![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=avernin-one_averninstats&metric=vulnerabilities&token=c4cb303f5e9d2e0bbc748450c90db318779fe834)
+![Github CodeQL](https://github.com/avernin-one/averninstats/actions/workflows/github-code-scanning/codeql/badge.svg)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 A stats processor for Minecraft Java Edition servers. It reads the per-player
 stats JSON files that Minecraft writes to disk, resolves player names and skins
 via the Mojang API, and generates a static website with highscores, per-block,
 per-item, per-entity breakdowns and individual player profiles.
 
-## Preview
+## Live Demo
 
-Live Demo: [stats.avernin.one](https://stats.avernin.one) (hosted on github.com)
+You can view a live demo that is hosted on github pages here: [stats.avernin.one](https://stats.avernin.one)
 
 <table>
   <tr>

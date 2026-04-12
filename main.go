@@ -21,6 +21,8 @@ func main() {
 	frontend.New().Copy()
 
 	// Download language files and build/load the category lookup map.
+	// This step is critical to create the LookupMaps which are later used to
+	// process the player stats.
 	lookup, err := translations.Run()
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to process languages")

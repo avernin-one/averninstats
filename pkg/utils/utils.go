@@ -19,7 +19,9 @@ import (
 )
 
 var (
-	// Mojang API allows 100 requests per minute.
+	// Different sources mention that the Mojang API has a rate limit of
+	// 1000 requests per 10 minutes or 200 per 2 minutes. We make 95 per minute
+	// just to be safe.
 	limiter = rate.NewLimiter(rate.Every(time.Minute/95), 5)
 )
 
@@ -118,7 +120,7 @@ func NewHttpRequest(url string) ([]byte, error) {
 	return io.ReadAll(res.Body)
 }
 
-// Adds a random number of hours in [0, addHours) to current.
+// Adds a random number of hours between 0 and `addHours` to tje current time.
 func AddRandomTime(current time.Time, addHours int) time.Time {
 	if addHours == 0 {
 		return current

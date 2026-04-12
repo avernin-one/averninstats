@@ -34,12 +34,6 @@ type Player struct {
 	Scores map[string]map[string]map[int][]string `json:"scores"`
 }
 
-// Is written per minecraft:custom stat.
-type HighscoreEntry struct {
-	Name   string           `json:"name"`
-	Scores map[int][]string `json:"scores"`
-}
-
 // Is written per block/item/entity stat.
 type StatEntry struct {
 	Name   string                                 `json:"name"`
@@ -134,16 +128,8 @@ func (p *Processor) processStats(rawStats Stats, uuid string) {
 		Medals: Medals{},
 	}
 
-	// action is one of
-	//	- custom
-	//	- picked_up
-	//	- mined
-	//	- killed_by
-	//	- broken
-	//	- killed
-	//	- used
-	//	- dropped
-	//	- crafted
+	// action is one of: custom, picked_up, mined, killed_by, broken, killed,
+	// used, dropped, crafted
 	for action, entries := range rawStats {
 		action = trimNamespace(action)
 
@@ -176,7 +162,7 @@ func (p *Processor) hasMinPlaytime(rawStats Stats) bool {
 	return ticks/20/60 > config.Get().MinPlayTime
 }
 
-// adds the custom stats to each player and also fills the highscores
+// Adds the custom stats to each player and also fills the highscores
 // for each statistic.
 func (p *Processor) processHighscore(entries map[string]int, player *Player) {
 	player.Stats = make(map[string]int, len(entries))

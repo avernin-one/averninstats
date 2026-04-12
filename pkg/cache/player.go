@@ -47,7 +47,7 @@ func (pc *PlayerCache) Save() {
 	}
 }
 
-// GetOrFetch returns the cached entry for uuid, fetching from the Mojang API
+// Returns the cached entry for uuid, fetching from the Mojang API
 // if the entry is missing, expired, or has incomplete skin data.
 func (pc *PlayerCache) GetOrFetch(uuid string) (*CachedPlayer, error) {
 	cp := pc.GetByUUID(uuid)

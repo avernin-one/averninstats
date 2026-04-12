@@ -15,7 +15,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// Data holds the resolved profile data for a single Minecraft player.
+// Holds the resolved profile data for a single Minecraft player.
 type Data struct {
 	ID         string `json:"id"`
 	Name       string `json:"name"`
@@ -118,7 +118,7 @@ func SaveHead(img image.Image, outputDir, playerName, playerModel string) {
 	log.Debug().Str("player", playerName).Msg("saved player head")
 }
 
-// SaveBody renders and saves the full-body image for the given skin.
+// Renders and saves the full-body image for the given skin.
 func SaveBody(img image.Image, outputDir, playerName, playerModel string) {
 	path := bodyPath(outputDir, playerName)
 

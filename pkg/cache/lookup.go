@@ -16,7 +16,7 @@ const (
 	TypeHighscore = "highscore"
 )
 
-// Lookup holds the category membership lists used to classify raw Minecraft
+// Holds the category membership lists used to classify raw Minecraft
 // stat keys. Built once from the en-gb language file and cached on disk.
 type Lookup struct {
 	Block  []string `json:"block"`
@@ -25,7 +25,7 @@ type Lookup struct {
 	Custom []string `json:"stats"`
 }
 
-// LoadLookup reads the lookup from cachePath.
+// Reads the lookup from cachePath.
 // Returns an error if the file is missing or malformed.
 func LoadLookup() (*Lookup, error) {
 	var l Lookup

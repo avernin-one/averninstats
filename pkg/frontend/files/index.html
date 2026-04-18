@@ -5,44 +5,48 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Minecraft server statistics">
-  <link rel=icon type=image/png href="/images/favicon.png">
+  <link rel="icon" type="image/png" href="/images/favicon.png">
   <link rel="stylesheet" href="/assets/css/style.css">
+  <title></title>
 </head>
 
 <body>
 
-  <nav class="topnav" aria-label="Site menu">
-    <a href="#/highscore" class="logo">averninstats</a>
-    <button id="mobile-toc-toggle">☰</button>
-    <div class="nav-links">
-      <a href="#/highscore" class="nav-link" data-id="highscore">Highscore</a>
+  <nav id="top" aria-label="Top Navigation">
+    <a href="#/highscore" class="left hidden">averninstats</a>
+    <button id="mobile-toc-toggle" class="left hidden">☰</button>
+    <div class="navigation">
+      <a href="#/highscore" class="nav-link active" data-id="highscore">Highscore</a>
       <a href="#/block" class="nav-link" data-id="block">Block</a>
       <a href="#/item" class="nav-link" data-id="item">Item</a>
       <a href="#/entity" class="nav-link" data-id="entity">Entity</a>
       <a href="#/player" class="nav-link" data-id="player">Player</a>
     </div>
 
-    <div class="topnav-right">
-      <ul class="ext-links"></ul>
-      <div>
-        <p id="languageSwitcher">🌐</p>
-        <ul name="language" id="language" tabindex="0"></ul>
+    <div class="right hidden">
+      <div class="links">
+        <a href="https://vote.avernin.one" target="_blank" rel="noopener">Vote</a>
+        <a href="https://discord.avernin.one" target="_blank" rel="noopener">Discord</a>
       </div>
-      <button id="toggleButton">🌕</button>
+
+      <span id="language-switcher">🌐
+        <ul id="language" class="hidden" tabindex="0"></ul>
+      </span>
+
+      <span id="theme-button">🌕</span>
     </div>
+
+    <span id="mobile-extra-toggle" class="hidden">⛶</span>
   </nav>
 
-  <div id="app">
-    <div class="page-layout">
-      <nav class="toc mobile-hide" aria-label="TOC menu">
-        <input id="toc-search" class="toc-search" type="search" placeholder="Filter..." aria-label="Filter stats">
-        <ul id="toc-list" data-id=""></ul>
-      </nav>
-      <main id="main"></main>
-    </div>
-  </div>
+  <nav id="toc" class="hidden" aria-label="TOC Navigation">
+    <input id="toc-search" type="search" placeholder="Filter..." aria-label="Filter stats">
+    <div id="toc-list"></div>
+  </nav>
 
-  <footer></footer>
+  <main id="main"></main>
+
+  <footer id="footer"></footer>
 
   <script type="module" src="assets/js/app.js"></script>
 </body>

@@ -42,14 +42,11 @@ function setActiveToc(id) {
 }
 
 function scrollToSection(id) {
-  const topNav = document.querySelector("nav.topnav");
+  const topNav = document.querySelector("nav#top");
   const main = document.querySelector("main");
   const section = document.getElementById(id);
 
-  let offset = topNav.offsetHeight + main.style.paddingBottom;
-
   if (section) {
-    section.style.scrollMarginTop = `${offset}px`;
     section.scrollIntoView(SCROLL_OPTIONS);
   }
 }
@@ -66,15 +63,15 @@ export function renderIndex() {
 
   title = document.querySelector("head meta[name=custom_title]").content;
 
-  document.querySelector("nav.topnav .logo").innerHTML = title;
+  document.querySelector("#top > .left").innerHTML = title;
 
   // Topnav external links
-  document.querySelector("nav.topnav .ext-links").innerHTML = Mustache.render(
+  document.querySelector("#top > .right > .links").innerHTML = Mustache.render(
     T.get("_topnav-links"),
   );
 
   // Footer
-  document.querySelector("footer").innerHTML = Mustache.render(
+  document.querySelector("#footer").innerHTML = Mustache.render(
     T.get("_footer"),
     {},
   );
@@ -82,15 +79,15 @@ export function renderIndex() {
   const darkButton = "🌑";
   const lightButton = "🌕";
   const lastModeKey = "lastMode";
-  const toggleButton = document.querySelector("#toggleButton");
+  const themeButton = document.querySelector("#theme-button");
 
   function applyMode(isLight) {
     document.body.classList.toggle("light", isLight);
-    toggleButton.innerText = isLight ? darkButton : lightButton;
+    themeButton.innerText = isLight ? darkButton : lightButton;
     localStorage.setItem(lastModeKey, isLight ? "light" : "dark");
   }
 
-  toggleButton.addEventListener("click", () => {
+  themeButton.addEventListener("click", () => {
     const isLight = !document.body.classList.contains("light");
     applyMode(isLight);
   });
@@ -106,14 +103,16 @@ export function renderIndex() {
     applyMode(isLight);
   });
 
-  /*
-    MOVE THIS INTO FUNCTIONS
-  */
+  let tocToggle = document.querySelector("#mobile-toc-toggle");
+  tocToggle.addEventListener("click", () => {
+    let toc = document.querySelector("#toc");
+    toc.classList.toggle("hidden");
+  });
 
-  let tocButton = document.querySelector("#mobile-toc-toggle");
-  tocButton.addEventListener("click", () => {
-    let toc = document.querySelector("nav.toc");
-    toc.classList.toggle("mobile-hide");
+  let mobileExtraToggle = document.querySelector("#mobile-extra-toggle");
+  mobileExtraToggle.addEventListener("click", () => {
+    let navRight = document.querySelector("#top > .right");
+    navRight.classList.toggle("hidden");
   });
 }
 
@@ -183,8 +182,10 @@ export async function renderHighscore(stat = null) {
   setTitle("Highscore");
   setActiveNav("highscore");
 
+  let site = document.querySelector(`#toc-list[data-id="highscore"]`);
   let index = await renderToc("highscore");
-  let site = document.querySelector(`.stat-detail[data-id="highscore"]`);
+
+  console.log("site", site);
 
   if (site == null) {
     let data;
@@ -197,7 +198,7 @@ export async function renderHighscore(stat = null) {
     }
 
     render(Mustache.render(T.get("page-highscore"), data));
-    scheduleAlign(".stat-detail");
+    scheduleAlign("#main");
   }
 
   let url = `#/highscore`;
@@ -257,7 +258,7 @@ export async function renderStats(category, statName) {
     }),
   );
 
-  scheduleAlign(".stat-detail");
+  scheduleAlign("#main");
   const url = `#/${category}/${statName}`;
   globalThis.history.replaceState(this, "", url);
 }
@@ -297,7 +298,7 @@ export async function renderPlayers(playerName = null) {
   data.scores = formatPlayerScores(data.scores);
 
   render(Mustache.render(T.get("page-player-profile"), data));
-  scheduleAlign(".player-profile");
+  scheduleAlign("#main");
   setActiveToc(playerName);
 }
 

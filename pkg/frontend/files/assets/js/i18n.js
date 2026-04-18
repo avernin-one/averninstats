@@ -44,7 +44,7 @@ export async function initI18n() {
   await load(current);
 
   const langSelector = document.querySelector("#language");
-  const languageSwitcher = document.querySelector("#languageSwitcher");
+  const languageSwitcher = document.querySelector("#language-switcher");
 
   const translate = new Intl.DisplayNames(current ?? [], {
     type: "language",

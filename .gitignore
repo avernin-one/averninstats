@@ -6,7 +6,7 @@
 *.dll
 *.so
 *.dylib
-dist/
+
 
 # Test binary, built with `go test -c`
 *.test
@@ -57,7 +57,7 @@ atlassian-ide-plugin.xml
 .ionide
 
 ### Custom
-
+/dist
 /demo_input
 /cache
 /output

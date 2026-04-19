@@ -1,10 +1,6 @@
 // utils.js - shared helpers
 "use strict";
 
-// ---------------------------------------------------------------------------
-// Type checks
-// ---------------------------------------------------------------------------
-
 // Returns true if the stat key holds a distance value in centimetres.
 export function isDistance(key) {
   return key.endsWith("_one_cm");
@@ -14,10 +10,6 @@ export function isDistance(key) {
 export function isTicks(key) {
   return key.startsWith("time_") || key.endsWith("_time");
 }
-
-// ---------------------------------------------------------------------------
-// Value formatting
-// ---------------------------------------------------------------------------
 
 // Formats a raw Minecraft stat value into a human-readable string.
 // Distances are stored as centimetres, time values as ticks.
@@ -68,10 +60,6 @@ export function formatTicks(ticks) {
   return parts.join(" ");
 }
 
-// ---------------------------------------------------------------------------
-// String helpers
-// ---------------------------------------------------------------------------
-
 // Converts a snake_case or kebab-case key to Title Case.
 export function titleCase(key) {
   return String(key)
@@ -79,11 +67,7 @@ export function titleCase(key) {
     .replaceAll(/(?<!\()(?<!\p{L})\p{L}/gu, (c) => c.toUpperCase());
 }
 
-// ---------------------------------------------------------------------------
-// Data fetching
-// ---------------------------------------------------------------------------
-
-// Fetches a JSON file. Throws a descriptive error on HTTP failure.
+// Fetches a JSON file. Throws a error on HTTP failure.
 export async function fetchJSON(path) {
   const res = await fetch(path);
   if (!res.ok) {

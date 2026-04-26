@@ -53,7 +53,8 @@ func (pc *PlayerCache) GetOrFetch(uuid string) (*CachedPlayer, error) {
 	cp := pc.GetByUUID(uuid)
 
 	if cp == nil {
-		cp, err := pc.fetchFromAPI(uuid)
+		var err error
+		cp, err = pc.fetchFromAPI(uuid)
 		if err != nil {
 			return nil, err
 		}

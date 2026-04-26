@@ -67,6 +67,12 @@ Usage of ./averninstats:
       --version                     Print version information and exit
 ```
 
+## Customization
+
+In the final output in ``assets/templates` you will files that start with a `_`underscore (`_footer.mustache`,
+`_title.mustache`, `_topnav-links.mustache`, `...`). Those files are meant to give a easy entrypoint to edit dynamic
+parts of the website. Of course you can completly overwrite all parts the generated output.
+
 ## How to use
 
 The output directory will contain a ready-to-serve static website. Point any

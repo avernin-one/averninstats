@@ -42,8 +42,6 @@ function setActiveToc(id) {
 }
 
 function scrollToSection(id) {
-  const topNav = document.querySelector("nav#top");
-  const main = document.querySelector("main");
   const section = document.getElementById(id);
 
   if (section) {

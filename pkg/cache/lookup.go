@@ -40,7 +40,7 @@ func (l *Lookup) Save() error {
 	return utils.SaveJSONFile(LookupFile(), l)
 }
 
-// AnyEmpty reports whether any category list has no entries.
+// Reports whether any category list has no entries.
 func (l *Lookup) AnyEmpty() bool {
 	return len(l.Block) == 0 || len(l.Item) == 0 || len(l.Entity) == 0 || len(l.Custom) == 0
 }

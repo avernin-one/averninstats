@@ -69,7 +69,7 @@ Usage of ./averninstats:
 
 ## Customization
 
-In the final output in ``assets/templates` you will files that start with a `_`underscore (`_footer.mustache`,
+In the final output in `assets/templates` you will files that start with a `_`underscore (`_footer.mustache`,
 `_title.mustache`, `_topnav-links.mustache`, `...`). Those files are meant to give a easy entrypoint to edit dynamic
 parts of the website. Of course you can completly overwrite all parts the generated output.
 

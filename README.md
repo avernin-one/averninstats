@@ -46,25 +46,26 @@ Github Repository: [averninstats-website](https://github.com/avernin-one/avernin
 ```text
 $ ./averninstats --help
 Usage of ./averninstats:
-      --cache-dir string            Directory for cache files (default "./cache")
-      --cache-max-age int           Max cache age in hours before renewal (default 336)
-      --config string               Path to a optional YAML config file
-      --exclude-uuids strings       Exclude UUIDs from being processed
-      --help                        Print this help message and exit
-      --languages strings           Languages used in frontend for translations (default [en-gb])
-      --last-check-jitter int       Random jitter in hours added to cache expiry (default 96)
-      --list-languages              List available languages and exit
-      --log-debug                   Enable debug logging
-      --log-json                    Enable JSON log format
-      --log-no-color                Disable log colors
-      --min-play-time int           Minimum playtime in minutes to include a player (default 10)
-      --minecraft-version string    Target Minecraft version (default "1.21.11")
-      --minify                      Minify output files (default true)
-      --num-highscores int          Global highscore list size per stat (default 10)
-      --num-player-highscores int   Per-player top-N scores per category (default 5)
-      --output-dir string           Directory for output files (default "./output")
-      --stats-source-dir string     Directory with per-player stats JSON files (default "./stats")
-      --version                     Print version information and exit
+    --cache-dir string            Directory for cache files (default "./cache")
+    --cache-max-age int           Max cache age in hours before renewal (default 336)
+    --config string               Path to a optional YAML config file
+    --exclude-uuids strings       Exclude UUIDs from being processed
+    --frontend                    Copy frontend files to the configured output directory (default true)
+    --help                        Print this help message and exit
+    --languages strings           Languages used in frontend for translations (default [en-gb])
+    --last-check-jitter int       Random jitter in hours added to cache expiry (default 96)
+    --list-languages              List available languages and exit
+    --log-debug                   Enable debug logging
+    --log-json                    Enable JSON log format
+    --log-no-color                Disable log colors
+    --min-play-time int           Minimum playtime in minutes to include a player (default 10)
+    --minecraft-version string    Target Minecraft version (default "1.21.11")
+    --minify                      Minify output files (default true)
+    --num-highscores int          Global highscore list size per stat (default 10)
+    --num-player-highscores int   Per-player top-N scores per category (default 5)
+    --output-dir string           Directory for output files (default "./output")
+    --stats-source-dir string     Directory with per-player stats JSON files (default "./stats")
+    --version                     Print version information and exit
 ```
 
 ## Customization

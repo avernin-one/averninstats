@@ -91,7 +91,7 @@ docker pull ghcr.io/avernin-one/averninstats
 
 ```bash
 docker run --rm \
-  -v /path/to/minecraft/world/stats:/stats:ro \
+  -v /path/to/.minecraft/saves/<world name>/stats:/stats:ro \
   -v /path/to/output:/output \
   -v /path/to/cache:/cache \
   ghcr.io/avernin-one/averninstats \

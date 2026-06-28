@@ -98,7 +98,7 @@ func Init() *Config {
 	pflag.BoolVar(&cfg.Minify, "minify", true, "Minify output files")
 
 	// Minecraft
-	pflag.StringVar(&cfg.MinecraftVersion, "minecraft-version", "1.21.11", "Target Minecraft version")
+	pflag.StringVar(&cfg.MinecraftVersion, "minecraft-version", "26.1.2", "Target Minecraft version")
 
 	// Stats
 	pflag.IntVar(&cfg.NumHighscores, "num-highscores", 10, "Global highscore list size per stat")

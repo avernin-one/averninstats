@@ -91,7 +91,7 @@ docker pull ghcr.io/avernin-one/averninstats
 
 ```bash
 docker run --rm \
-  -v /path/to/.minecraft/saves/<world name>/stats:/stats:ro \
+  -v /path/to/minecraft/world/players/stats:/stats:ro \
   -v /path/to/output:/output \
   -v /path/to/cache:/cache \
   ghcr.io/avernin-one/averninstats \
@@ -99,7 +99,7 @@ docker run --rm \
   --output-dir /output \
   --cache-dir /cache \
   --languages=en-gb,de-de \
-  --minecraft-version 1.21.11
+  --minecraft-version 26.1.2
 ```
 
 ### Run Binary

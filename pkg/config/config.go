@@ -115,7 +115,7 @@ func Init() *Config {
 	pflag.Parse()
 
 	if err := env.ParseWithOptions(cfg, env.Options{
-		Prefix:                "BUKI_",
+		Prefix:                "AVERNINSTATS_",
 		UseFieldNameByDefault: true,
 	}); err != nil {
 		log.Error().Err(err).Msg("failed to parse env vars")

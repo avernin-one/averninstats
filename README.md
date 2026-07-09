@@ -59,7 +59,7 @@ Usage of ./averninstats:
     --log-json                    Enable JSON log format
     --log-no-color                Disable log colors
     --min-play-time int           Minimum playtime in minutes to include a player (default 10)
-    --minecraft-version string    Target Minecraft version (default "1.21.11")
+    --minecraft-version string    Target Minecraft version (default "26.1.2")
     --minify                      Minify output files (default true)
     --num-highscores int          Global highscore list size per stat (default 10)
     --num-player-highscores int   Per-player top-N scores per category (default 5)
@@ -125,5 +125,5 @@ go build -o averninstats .
   --output-dir ./output \
   --cache-dir ./cache \
   --languages=en-gb,de-de \
-  --minecraft-version 1.21.11
+  --minecraft-version 26.1.2
 ```

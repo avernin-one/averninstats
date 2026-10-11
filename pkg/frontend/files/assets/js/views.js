@@ -1,7 +1,7 @@
 // views.js - page rendering via Mustache + i18n
 "use strict";
 
-import Mustache from "https://unpkg.com/mustache@4.2.0/mustache.mjs";
+import Mustache from "./vendor/mustache.js"; // v4.2.0
 import { fetchJSON, formatValue, titleCase } from "./utils.js";
 import { translate } from "./i18n.js";
 import * as T from "./templates.js";

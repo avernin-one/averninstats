@@ -60,7 +60,7 @@ RUN groupadd -f nonroot \
     && useradd -g nonroot nonroot \
     && mkdir -p /docker-entrypoint.d \
     && chown nonroot:nonroot /docker-entrypoint.d \
-    && chmod 0755 /usr/local/bin/${APP_NAME} /usr/local/bin/entrypoint.sh
+    && chmod 0755 "/usr/local/bin/${APP_NAME}" /usr/local/bin/entrypoint.sh
 
 USER nonroot
 

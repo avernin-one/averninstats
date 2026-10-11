@@ -12,6 +12,7 @@ permissions:
 
 env:
   CONFIG_FILE: pkg/config/config.go
+  README_FILE: README.md
   MANIFEST_URL: https://piston-meta.mojang.com/mc/game/version_manifest_v2.json
 
 jobs:
@@ -75,6 +76,12 @@ jobs:
 
           sed -i -E "s/(\"minecraft-version\", \")[^\"]+(\")/\1${REMOTE}\2/" "${CONFIG_FILE}"
 
+          # README: help output default and usage examples.
+          sed -i -E \
+            -e "s/(Target Minecraft version \(default \")[^\"]+(\")/\1${REMOTE}\2/" \
+            -e "s/(--minecraft-version )[0-9][0-9.]*/\1${REMOTE}/g" \
+            "${README_FILE}"
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "${branch}"
@@ -88,7 +95,7 @@ jobs:
             --body "$(cat <<EOF
           Minecraft **${REMOTE}** has been released.
 
-          This PR updates the default target Minecraft version in \`${CONFIG_FILE}\`:
+          This PR updates the default target Minecraft version in \`${CONFIG_FILE}\` and \`${README_FILE}\`:
 
           | | Version |
           |---|---|

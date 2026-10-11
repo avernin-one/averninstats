@@ -28,7 +28,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          remote="$(curl -fsSL "${MANIFEST_URL}" | jq -r '.latest.release')"
+          remote="$(curl --proto '=https' --tlsv1.2 -fsSL "${MANIFEST_URL}" | jq -r '.latest.release')"
           current="$(sed -nE 's/.*"minecraft-version", "([^"]+)".*/\1/p' "${CONFIG_FILE}")"
 
           # Only accept plain version numbers, the value ends up in sed,

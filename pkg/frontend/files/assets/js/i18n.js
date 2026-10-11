@@ -107,28 +107,12 @@ export function translate(key) {
   return titleCase(key);
 }
 
-// Returns the current language code, e.g. "en-gb".
-export function currentLang() {
-  return current;
-}
-
-// Returns the language list from the index.
-export function availableLanguages() {
-  if (index?.languages) {
-    return index.languages;
-  }
-  return [];
-}
-
-// Switches to a new language, loading its file if not yet cached.
-// Fires all registered change listeners afterwards.
-export async function setLanguage(code) {
+// Persists the new language and reloads the page, which loads its file.
+export function setLanguage(code) {
   if (code === current) {
     return;
   }
 
-  await load(code);
-  current = code;
   localStorage.setItem("lang", code);
   globalThis.location.reload();
 }

@@ -12,7 +12,7 @@ const SCROLL_OPTIONS = {
   block: "center",
 };
 
-let tocs = [];
+const tocs = {};
 let title = "";
 
 // Waits for the browser to draw before measuring table widths.
@@ -90,16 +90,15 @@ export function renderIndex() {
     applyMode(isLight);
   });
 
-  globalThis.addEventListener("DOMContentLoaded", () => {
-    const stored = localStorage.getItem(lastModeKey);
+  // Module scripts run after parsing, so the DOM is ready here. Waiting for
+  // DOMContentLoaded would miss the event after the awaited bootstrap.
+  const stored = localStorage.getItem(lastModeKey);
+  const isLight =
+    stored === "light" ||
+    (!stored &&
+      globalThis.matchMedia?.("(prefers-color-scheme: light)").matches);
 
-    const isLight =
-      stored === "light" ||
-      (!stored &&
-        globalThis.matchMedia?.("(prefers-color-scheme: light)").matches);
-
-    applyMode(isLight);
-  });
+  applyMode(isLight);
 
   let tocToggle = document.querySelector("#mobile-toc-toggle");
   tocToggle.addEventListener("click", () => {
@@ -155,20 +154,18 @@ async function renderToc(category, doTranslate = true) {
     toc.innerHTML = Mustache.render(T.get("toc-list"), tocs[category]);
   }
 
-  // Attach search event listener
-  const handleSearch = (event) => {
+  // Replace the search handler; addEventListener would stack a new closure
+  // on every navigation.
+  const searchInput = document.getElementById("toc-search");
+
+  searchInput.value = "";
+  searchInput.oninput = (event) => {
     const query = event.target.value.toLowerCase();
     const filteredItems = tocs[category].filter((item) =>
       item.name.toLowerCase().includes(query),
     );
     toc.innerHTML = Mustache.render(T.get("toc-list"), filteredItems);
   };
-
-  const searchInput = document.getElementById("toc-search");
-
-  searchInput.value = "";
-  searchInput.removeEventListener("input", handleSearch);
-  searchInput.addEventListener("input", handleSearch);
 
   return tocs[category];
 }
@@ -182,8 +179,9 @@ export async function renderHighscore(stat = null) {
 
   let site = document.querySelector(`#toc-list[data-id="highscore"]`);
   let index = await renderToc("highscore");
-
-  console.log("site", site);
+  if (!index) {
+    return;
+  }
 
   if (site == null) {
     let data;
@@ -205,9 +203,9 @@ export async function renderHighscore(stat = null) {
     url = `#/highscore/${stat}`;
   }
 
-  scrollToSection(stat ?? index[0].id);
+  scrollToSection(stat ?? index[0]?.id);
 
-  globalThis.history.replaceState(this, "", url);
+  globalThis.history.replaceState(null, "", url);
 }
 
 // -----------------------------------------------------------------------------
@@ -215,9 +213,12 @@ export async function renderHighscore(stat = null) {
 // -----------------------------------------------------------------------------
 export async function renderStats(category, statName) {
   let index = await renderToc(category);
+  if (!index) {
+    return;
+  }
 
   if (statName == null) {
-    statName = index[0].id;
+    statName = index[0]?.id;
   }
 
   setTitle(titleCase(category), translate(statName));
@@ -258,7 +259,7 @@ export async function renderStats(category, statName) {
 
   scheduleAlign("#main");
   const url = `#/${category}/${statName}`;
-  globalThis.history.replaceState(this, "", url);
+  globalThis.history.replaceState(null, "", url);
 }
 
 // -----------------------------------------------------------------------------
@@ -268,13 +269,16 @@ export async function renderPlayers(playerName = null) {
   setActiveNav("player");
 
   let index = await renderToc("player", false);
+  if (!index) {
+    return;
+  }
 
   if (playerName == null) {
     setTitle("Player");
 
     render(
       Mustache.render(T.get("page-player"), {
-        players: index.sort(() => Math.random() - 0.5),
+        players: shuffle(index),
       }),
     );
 
@@ -298,6 +302,17 @@ export async function renderPlayers(playerName = null) {
   render(Mustache.render(T.get("page-player-profile"), data));
   scheduleAlign("#main");
   setActiveToc(playerName);
+}
+
+// Returns a shuffled copy of list (Fisher-Yates), leaving the cached TOC
+// order untouched.
+function shuffle(list) {
+  const copy = [...list];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
 }
 
 function formatHighscoreStats(data) {

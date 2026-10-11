@@ -67,6 +67,9 @@ func Get() *Config {
 
 // Parses flags, env vars, and an optional config file. Must be called
 // exactly once at program startup before any other package uses config.Get().
+//
+// Precedence (lowest to highest): flag defaults and CLI flags < config file <
+// env vars. Values from the config file and env vars overwrite CLI flags.
 func Init() *Config {
 	cfg = &Config{}
 
@@ -114,11 +117,6 @@ func Init() *Config {
 
 	pflag.Parse()
 
-	// Precedence: defaults < config file < env vars < CLI flags. The config
-	// file and env vars write directly into cfg, so explicitly set flags are
-	// remembered here and re-applied afterwards.
-	cliFlags := changedFlags()
-
 	cfg.readFile()
 
 	if err := env.ParseWithOptions(cfg, env.Options{
@@ -127,8 +125,6 @@ func Init() *Config {
 	}); err != nil {
 		log.Error().Err(err).Msg("failed to parse env vars")
 	}
-
-	applyFlags(cliFlags)
 
 	if cfg.Help {
 		fmt.Printf("Usage of %s:\n", os.Args[0])
@@ -161,39 +157,6 @@ func Init() *Config {
 // I18nDir returns the absolute path to the i18n output directory.
 func (c *Config) I18nDir() string {
 	return filepath.Join(c.OutputDir, i18nDir)
-}
-
-// Returns the values of all flags explicitly set on the command line.
-func changedFlags() map[string][]string {
-	values := map[string][]string{}
-
-	pflag.Visit(func(f *pflag.Flag) {
-		if sv, ok := f.Value.(pflag.SliceValue); ok {
-			values[f.Name] = sv.GetSlice()
-		} else {
-			values[f.Name] = []string{f.Value.String()}
-		}
-	})
-
-	return values
-}
-
-// Re-applies flag values captured by changedFlags.
-func applyFlags(values map[string][]string) {
-	for name, v := range values {
-		f := pflag.Lookup(name)
-
-		var err error
-		if sv, ok := f.Value.(pflag.SliceValue); ok {
-			err = sv.Replace(v)
-		} else {
-			err = f.Value.Set(v[0])
-		}
-
-		if err != nil {
-			log.Error().Err(err).Str("flag", name).Msg("failed to re-apply flag")
-		}
-	}
 }
 
 func (c *Config) readFile() {

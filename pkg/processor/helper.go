@@ -42,9 +42,11 @@ func sortedKeys(list map[int][]string) []int {
 	return keys
 }
 
-// Loop over the available highscores and assign `medals` to the effective
-// player.
-func (p *Processor) setMedals(player *Player) {
+// Counts the gold/silver/bronze placements of every player across all
+// highscores.
+func (p *Processor) computeMedals() map[string]Medals {
+	medals := make(map[string]Medals)
+
 	for _, scoreList := range p.Highscores {
 		for rank, key := range sortedKeys(scoreList) {
 			if rank >= 3 {
@@ -52,18 +54,19 @@ func (p *Processor) setMedals(player *Player) {
 			}
 
 			for _, name := range scoreList[key] {
-				if name != player.Name {
-					continue
-				}
+				m := medals[name]
 				switch rank {
 				case 0:
-					player.Medals.Gold++
+					m.Gold++
 				case 1:
-					player.Medals.Silver++
+					m.Silver++
 				case 2:
-					player.Medals.Bronze++
+					m.Bronze++
 				}
+				medals[name] = m
 			}
 		}
 	}
+
+	return medals
 }

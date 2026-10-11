@@ -46,6 +46,7 @@ type Processor struct {
 	Highscores  map[string]map[int][]string
 	//         block       stone      mined     5    player1,player2
 	Scores      map[string]map[string]map[string]map[int][]string
+	Players     []*Player
 	PlayerNames []string
 }
 
@@ -79,6 +80,12 @@ func (p *Processor) Process() {
 
 		current++
 		uuid := strings.TrimSuffix(file.Name(), filepath.Ext(file.Name()))
+
+		if slices.Contains(config.Get().ExcludeUUIDs, uuid) {
+			log.Warn().Str("uuid", uuid).Msg("is excluded")
+			continue
+		}
+
 		path := filepath.Join(config.Get().StatsSourceDir, file.Name())
 
 		log.Info().
@@ -104,17 +111,19 @@ func (p *Processor) Process() {
 		p.processStats(statsFile.Stats, uuid)
 	}
 
+	// Medals can only be assigned once all highscores are known.
+	medals := p.computeMedals()
+	for _, player := range p.Players {
+		player.Medals = medals[player.Name]
+		p.WritePlayer(player)
+	}
+
 	p.WriteIndexes()
 	p.WriteStats()
 	p.WriteHighscore()
 }
 
 func (p *Processor) processStats(rawStats Stats, uuid string) {
-	if slices.Contains(config.Get().ExcludeUUIDs, uuid) {
-		log.Warn().Str("uuid", uuid).Msg("is excluded")
-		return
-	}
-
 	if !p.hasMinPlaytime(rawStats) {
 		log.Warn().Str("uuid", uuid).Msg("not enough playtime")
 		return
@@ -130,7 +139,6 @@ func (p *Processor) processStats(rawStats Stats, uuid string) {
 		UUID:   uuid,
 		Name:   cachedPlayer.Name,
 		Scores: make(map[string]map[string]map[int][]string),
-		Medals: Medals{},
 	}
 
 	// action is one of: custom, picked_up, mined, killed_by, broken, killed,
@@ -148,9 +156,7 @@ func (p *Processor) processStats(rawStats Stats, uuid string) {
 		}
 	}
 
-	p.setMedals(player)
-	p.WritePlayer(player)
-
+	p.Players = append(p.Players, player)
 	p.PlayerNames = append(p.PlayerNames, player.Name)
 }
 
@@ -203,32 +209,36 @@ func (p *Processor) processStatEntry(player *Player, action, stat string, count 
 	}
 
 	// Create player scores.
-	if (player.Scores)[category] == nil {
-		(player.Scores)[category] = make(map[string]map[int][]string)
+	if player.Scores[category] == nil {
+		player.Scores[category] = make(map[string]map[int][]string)
 	}
 
-	if (player.Scores)[category][action] == nil {
-		(player.Scores)[category][action] = make(map[int][]string)
+	playerScores := player.Scores[category][action]
+	if playerScores == nil {
+		playerScores = make(map[int][]string)
+		player.Scores[category][action] = playerScores
 	}
 
-	(player.Scores)[category][action][count] = append((player.Scores)[category][action][count], stat)
-	trimScoreList((player.Scores)[category][action], config.Get().NumPlayerHighscores)
-	slices.Sort((player.Scores)[category][action][count])
+	playerScores[count] = append(playerScores[count], stat)
+	trimScoreList(playerScores, config.Get().NumPlayerHighscores)
+	slices.Sort(playerScores[count])
 
 	// Create global scores.
-	if (p.Scores)[category] == nil {
-		(p.Scores)[category] = make(map[string]map[string]map[int][]string)
+	if p.Scores[category] == nil {
+		p.Scores[category] = make(map[string]map[string]map[int][]string)
 	}
 
-	if (p.Scores)[category][stat] == nil {
-		(p.Scores)[category][stat] = make(map[string]map[int][]string)
+	if p.Scores[category][stat] == nil {
+		p.Scores[category][stat] = make(map[string]map[int][]string)
 	}
 
-	if (p.Scores)[category][stat][action] == nil {
-		(p.Scores)[category][stat][action] = make(map[int][]string)
+	globalScores := p.Scores[category][stat][action]
+	if globalScores == nil {
+		globalScores = make(map[int][]string)
+		p.Scores[category][stat][action] = globalScores
 	}
 
-	(p.Scores)[category][stat][action][count] = append((p.Scores)[category][stat][action][count], player.Name)
-	trimScoreList((p.Scores)[category][stat][action], config.Get().NumHighscores)
-	slices.Sort((p.Scores)[category][stat][action][count])
+	globalScores[count] = append(globalScores[count], player.Name)
+	trimScoreList(globalScores, config.Get().NumHighscores)
+	slices.Sort(globalScores[count])
 }

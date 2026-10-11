@@ -91,14 +91,24 @@ func (pc *PlayerCache) GetByUUID(uuid string) *CachedPlayer {
 // Downloads the skin image if not already in memory, then renders
 // and saves head/body images to disk if they are missing or expired.
 func (cp *CachedPlayer) EnsureSkin(refresh bool) {
-	if refresh || !player.HeadExists(config.Get().OutputDir, cp.Name) {
-		cp.Skin = player.GetSkin(cp.SkinURL)
-		player.SaveHead(cp.Skin, config.Get().OutputDir, cp.Name, cp.SkinModel)
+	outputDir := config.Get().OutputDir
+	needHead := refresh || !player.HeadExists(outputDir, cp.Name)
+	needBody := refresh || !player.BodyExists(outputDir, cp.Name)
+
+	if !needHead && !needBody {
+		return
 	}
 
-	if refresh || !player.BodyExists(config.Get().OutputDir, cp.Name) {
+	if cp.Skin == nil || refresh {
 		cp.Skin = player.GetSkin(cp.SkinURL)
-		player.SaveBody(cp.Skin, config.Get().OutputDir, cp.Name, cp.SkinModel)
+	}
+
+	if needHead {
+		player.SaveHead(cp.Skin, outputDir, cp.Name, cp.SkinModel)
+	}
+
+	if needBody {
+		player.SaveBody(cp.Skin, outputDir, cp.Name, cp.SkinModel)
 	}
 }
 

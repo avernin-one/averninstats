@@ -151,10 +151,6 @@ jobs:
 
       - name: 🔗 Create and push multi-arch manifest
         run: |
-          TAGS=$(echo "${{ steps.meta.outputs.tags }}" \
-            | tr '\n' ' ' \
-            | xargs -I{} echo "--tag {}")
-
           DIGESTS=$(ls /tmp/digests \
             | xargs -I{} cat /tmp/digests/{} \
             | xargs -I{} echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@{}")

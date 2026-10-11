@@ -2,7 +2,6 @@
 
 ![Averninstats Badge](https://img.shields.io/badge/avernin-stats-blue?style=flat)
 ![Build Status](https://github.com/avernin-one/averninstats/actions/workflows/release.yml/badge.svg)
-[![Go Report Card](https://goreportcard.com/badge/github.com/avernin-one/averninstats)](https://goreportcard.com/report/github.com/avernin-one/averninstats)
 ![Go version](https://img.shields.io/github/go-mod/go-version/avernin-one/averninstats)
 [![Go Reference](https://pkg.go.dev/badge/github.com/avernin-one/averninstats.svg)](https://pkg.go.dev/github.com/avernin-one/averninstats)
 ![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=avernin-one_averninstats&metric=alert_status&token=c4cb303f5e9d2e0bbc748450c90db318779fe834)
@@ -59,7 +58,7 @@ Usage of ./averninstats:
     --log-json                    Enable JSON log format
     --log-no-color                Disable log colors
     --min-play-time int           Minimum playtime in minutes to include a player (default 10)
-    --minecraft-version string    Target Minecraft version (default "26.1.2")
+    --minecraft-version string    Target Minecraft version (default "26.3")
     --minify                      Minify output files (default true)
     --num-highscores int          Global highscore list size per stat (default 10)
     --num-player-highscores int   Per-player top-N scores per category (default 5)
@@ -99,7 +98,7 @@ docker run --rm \
   --output-dir /output \
   --cache-dir /cache \
   --languages=en-gb,de-de \
-  --minecraft-version 26.1.2
+  --minecraft-version 26.3
 ```
 
 ### Run Binary
@@ -125,5 +124,5 @@ go build -o averninstats .
   --output-dir ./output \
   --cache-dir ./cache \
   --languages=en-gb,de-de \
-  --minecraft-version 26.1.2
+  --minecraft-version 26.3
 ```

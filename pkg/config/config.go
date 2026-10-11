@@ -67,6 +67,9 @@ func Get() *Config {
 
 // Parses flags, env vars, and an optional config file. Must be called
 // exactly once at program startup before any other package uses config.Get().
+//
+// Precedence (lowest to highest): flag defaults and CLI flags < config file <
+// env vars. Values from the config file and env vars overwrite CLI flags.
 func Init() *Config {
 	cfg = &Config{}
 
@@ -98,7 +101,7 @@ func Init() *Config {
 	pflag.BoolVar(&cfg.Minify, "minify", true, "Minify output files")
 
 	// Minecraft
-	pflag.StringVar(&cfg.MinecraftVersion, "minecraft-version", "26.1.2", "Target Minecraft version")
+	pflag.StringVar(&cfg.MinecraftVersion, "minecraft-version", "26.3", "Target Minecraft version")
 
 	// Stats
 	pflag.IntVar(&cfg.NumHighscores, "num-highscores", 10, "Global highscore list size per stat")
@@ -113,6 +116,8 @@ func Init() *Config {
 	pflag.BoolVar(&cfg.ListLanguages, "list-languages", false, "List available languages and exit")
 
 	pflag.Parse()
+
+	cfg.readFile()
 
 	if err := env.ParseWithOptions(cfg, env.Options{
 		Prefix:                "AVERNINSTATS_",
@@ -133,7 +138,7 @@ func Init() *Config {
 		os.Exit(0)
 	}
 
-	// Apply log settings after flag/env parsing so CLI overrides env.
+	// Apply log settings after all sources have been merged.
 	if cfg.LogDebug {
 		zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	}
@@ -144,7 +149,6 @@ func Init() *Config {
 		log.Logger = zerolog.New(os.Stdout).With().Caller().Timestamp().Logger()
 	}
 
-	cfg.readFile()
 	cfg.validate()
 
 	return cfg
@@ -157,7 +161,7 @@ func (c *Config) I18nDir() string {
 
 func (c *Config) readFile() {
 	if c.Config == "" {
-		log.Warn().Msg("no config file specified")
+		log.Debug().Msg("no config file specified")
 		return
 	}
 

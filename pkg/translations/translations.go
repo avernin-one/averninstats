@@ -1,6 +1,8 @@
 package translations
 
 import (
+	"crypto/sha1" //nolint:gosec // Mojang identifies assets by their SHA-1 hash
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -45,6 +47,8 @@ var (
 	populateRe = regexp.MustCompile(`^(block|item|entity|stat)(\.minecraft)?\.`)
 	// Strips the full namespaced prefix.
 	processRe = regexp.MustCompile(`^(block|item|entity|stats?(_type)?)(\.minecraft)?\.`)
+	// Validates asset hashes before they are used to build download URLs.
+	sha1Re = regexp.MustCompile(`^[0-9a-f]{40}$`)
 	// Is the language used to build the Lookup.
 	lookupSource = "en-gb"
 )
@@ -56,9 +60,9 @@ var (
 // subsequent runs skip downloading. Processed i18n files are currently always
 // re-written so version changes are always picked up.
 //
-// The Lookup itself is cached separately in lookup.json. If that cache is
-// valid the download/processing step is still run for the i18n files, but
-// the Lookup is returned from cache instead of being rebuilt.
+// The Lookup is always rebuilt from the source language and persisted to
+// lookup.json. The cached copy is only used as a fallback when the asset
+// index cannot be fetched.
 func Run() (*cache.Lookup, error) {
 	index, err := fetchAssetIndex(config.Get().MinecraftVersion)
 	if err != nil {
@@ -90,9 +94,9 @@ func Run() (*cache.Lookup, error) {
 
 	if len(languages) == 0 {
 		log.Fatal().
-			Strs("configures_languages", config.Get().Languages).
-			Msg("no configured languages could be processed." +
-				"Use --list-languages to get a list of available" +
+			Strs("configured_languages", config.Get().Languages).
+			Msg("no configured languages could be processed. " +
+				"Use --list-languages to get a list of available " +
 				"languages and update your parameters")
 	}
 
@@ -130,7 +134,7 @@ func processLanguage(l *cache.Lookup, languages *[]string, key, hash string) {
 	if !slices.Contains(config.Get().Languages, name) {
 		log.Debug().
 			Str("language", name).
-			Strs("configured_langues", config.Get().Languages).
+			Strs("configured_languages", config.Get().Languages).
 			Msg("skipping not configured language")
 
 		return
@@ -139,7 +143,7 @@ func processLanguage(l *cache.Lookup, languages *[]string, key, hash string) {
 	// Fetch from raw cache or download.
 	raw, err := getRaw(name, hash)
 	if err != nil {
-		log.Fatal().Err(err).Str("language", name).Msg("failed to get language, skipping")
+		log.Error().Err(err).Str("language", name).Msg("failed to get language, skipping")
 		return
 	}
 
@@ -162,7 +166,8 @@ func getRaw(name, hash string) (map[string]string, error) {
 	rawPath := cache.RawLanguageFile(name)
 
 	if utils.FileExists(rawPath, true) {
-		raw, err := loadRaw(rawPath)
+		var raw map[string]string
+		err := utils.ReadJSONFile(rawPath, &raw)
 		if err == nil {
 			log.Debug().Str("language", name).Msg("raw language loaded from cache")
 			return raw, nil
@@ -177,11 +182,20 @@ func getRaw(name, hash string) (map[string]string, error) {
 // Fetches a raw language file from Mojang's resource CDN and persists it to
 // the raw cache.
 func downloadRaw(name, hash string) (map[string]string, error) {
+	if !sha1Re.MatchString(hash) {
+		return nil, fmt.Errorf("invalid asset hash %q for %s", hash, name)
+	}
+
 	url := fmt.Sprintf("https://resources.download.minecraft.net/%s/%s", hash[:2], hash)
 
 	body, err := utils.NewHttpRequest(url)
 	if err != nil {
 		return nil, fmt.Errorf("download %s: %w", name, err)
+	}
+
+	sum := sha1.Sum(body) //nolint:gosec // integrity check against Mojang's hash
+	if hex.EncodeToString(sum[:]) != hash {
+		return nil, fmt.Errorf("download %s: SHA-1 mismatch", name)
 	}
 
 	var raw map[string]string
@@ -284,7 +298,6 @@ func fetchAssetIndex(minecraftVersion string) (*assetIndex, error) {
 
 	if err := utils.SaveJSONFile(cache.AssetIndexFile(), index); err != nil {
 		log.Warn().Err(err).Str("version", minecraftVersion).Msg("failed to cache asset index")
-		return &index, err
 	}
 
 	return &index, nil
@@ -300,21 +313,6 @@ func langName(key string) string {
 	name = strings.ReplaceAll(name, "_", "-")
 	name = strings.TrimSuffix(name, filepath.Ext(name))
 	return name
-}
-
-// Reads and decodes a raw language file from disk.
-func loadRaw(path string) (map[string]string, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	var raw map[string]string
-	if err := json.Unmarshal(data, &raw); err != nil {
-		return nil, err
-	}
-
-	return raw, nil
 }
 
 // Keeps only block/item/entity/stat keys and strips their

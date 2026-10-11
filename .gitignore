@@ -62,5 +62,6 @@ atlassian-ide-plugin.xml
 ### Custom
 /dist
 /demo_input
+/demo_output
 /cache
 /output

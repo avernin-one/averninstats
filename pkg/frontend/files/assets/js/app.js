@@ -27,8 +27,10 @@ async function bootstrap() {
     await Promise.all([loadTemplates(), initI18n()]);
   } catch (err) {
     console.error("Bootstrap failed:", err);
-    document.getElementById("app").innerHTML =
-      `<div style="padding:2rem;color:#e94560">⚠️ Failed to load: ${err.message}</div>`;
+    const box = document.createElement("div");
+    box.style.cssText = "padding:2rem;color:#e94560";
+    box.textContent = `⚠️ Failed to load: ${err.message}`;
+    document.getElementById("main").replaceChildren(box);
     return;
   }
 

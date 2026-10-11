@@ -6,13 +6,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	"image/draw"
 	"image/png"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/avernin-one/averninstats/pkg/utils"
 	skin "github.com/mineatar-io/skin-render"
 	"github.com/rs/zerolog/log"
+)
+
+var (
+	// Player names are used in output file paths, so only allow the
+	// characters Mojang permits.
+	nameRe = regexp.MustCompile(`^[A-Za-z0-9_]{1,16}$`)
+	uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}$`)
 )
 
 // Holds the resolved profile data for a single Minecraft player.
@@ -40,6 +49,10 @@ type Metadata struct {
 
 // Retrieves profile and skin metadata for uuid from the Mojang API.
 func Fetch(uuid string) (Data, error) {
+	if !uuidRe.MatchString(uuid) {
+		return Data{}, fmt.Errorf("invalid UUID %q", uuid)
+	}
+
 	url := fmt.Sprintf("https://sessionserver.mojang.com/session/minecraft/profile/%s", uuid)
 
 	body, err := utils.NewHttpRequest(url)
@@ -50,6 +63,10 @@ func Fetch(uuid string) (Data, error) {
 	var d Data
 	if err := json.Unmarshal(body, &d); err != nil {
 		return Data{}, fmt.Errorf("decode profile %q: %w", uuid, err)
+	}
+
+	if !nameRe.MatchString(d.Name) {
+		return Data{}, fmt.Errorf("invalid player name %q for %q", d.Name, uuid)
 	}
 
 	var encodedTexture string
@@ -98,13 +115,7 @@ func GetSkin(url string) image.Image {
 func SaveHead(img image.Image, outputDir, playerName, playerModel string) {
 	path := headPath(outputDir, playerName)
 
-	nrgba, ok := img.(*image.NRGBA)
-	if !ok {
-		log.Warn().Str("player", playerName).Msg("unexpected image type for head render")
-		return
-	}
-
-	rendered := skin.RenderFace(nrgba, skin.Options{
+	rendered := skin.RenderFace(toNRGBA(img), skin.Options{
 		Scale:   1,
 		Overlay: true,
 		Slim:    playerModel == "slim",
@@ -122,13 +133,7 @@ func SaveHead(img image.Image, outputDir, playerName, playerModel string) {
 func SaveBody(img image.Image, outputDir, playerName, playerModel string) {
 	path := bodyPath(outputDir, playerName)
 
-	nrgba, ok := img.(*image.NRGBA)
-	if !ok {
-		log.Warn().Str("player", playerName).Msg("unexpected image type for body render")
-		return
-	}
-
-	rendered := skin.RenderBody(nrgba, skin.Options{
+	rendered := skin.RenderBody(toNRGBA(img), skin.Options{
 		Scale:   7,
 		Overlay: true,
 		Slim:    playerModel == "slim",
@@ -140,6 +145,20 @@ func SaveBody(img image.Image, outputDir, playerName, playerModel string) {
 	}
 
 	log.Debug().Str("player", playerName).Msg("saved player body")
+}
+
+// Converts img to *image.NRGBA as required by the skin renderer, e.g. for
+// paletted PNG skins.
+func toNRGBA(img image.Image) *image.NRGBA {
+	if nrgba, ok := img.(*image.NRGBA); ok {
+		return nrgba
+	}
+
+	b := img.Bounds()
+	nrgba := image.NewNRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
+	draw.Draw(nrgba, nrgba.Bounds(), img, b.Min, draw.Src)
+
+	return nrgba
 }
 
 func downloadImage(url string) (image.Image, error) {

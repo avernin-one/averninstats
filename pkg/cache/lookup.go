@@ -2,7 +2,6 @@ package cache
 
 import (
 	"fmt"
-	"slices"
 
 	"github.com/avernin-one/averninstats/pkg/utils"
 )
@@ -23,6 +22,9 @@ type Lookup struct {
 	Item   []string `json:"item"`
 	Entity []string `json:"entity"`
 	Custom []string `json:"stats"`
+
+	// stat -> category, built lazily from the lists above.
+	types map[string]string
 }
 
 // Reads the lookup from cachePath.
@@ -45,18 +47,34 @@ func (l *Lookup) AnyEmpty() bool {
 	return len(l.Block) == 0 || len(l.Item) == 0 || len(l.Entity) == 0 || len(l.Custom) == 0
 }
 
+// Returns the category of stat. Blocks take precedence over items and items
+// over entities, as some names exist in multiple categories.
 func (l *Lookup) GetType(stat string) (string, error) {
-	if slices.Contains(l.Block, stat) {
-		return TypeBlock, nil
+	if l.types == nil {
+		l.buildIndex()
 	}
 
-	if slices.Contains(l.Item, stat) {
-		return TypeItem, nil
-	}
-
-	if slices.Contains(l.Entity, stat) {
-		return TypeEntity, nil
+	if t, ok := l.types[stat]; ok {
+		return t, nil
 	}
 
 	return "", fmt.Errorf(`stat "%s" not found`, stat)
+}
+
+func (l *Lookup) buildIndex() {
+	l.types = make(map[string]string, len(l.Block)+len(l.Item)+len(l.Entity))
+
+	// Insert in reverse precedence so higher priority categories win.
+	for _, e := range []struct {
+		typ   string
+		names []string
+	}{
+		{TypeEntity, l.Entity},
+		{TypeItem, l.Item},
+		{TypeBlock, l.Block},
+	} {
+		for _, name := range e.names {
+			l.types[name] = e.typ
+		}
+	}
 }

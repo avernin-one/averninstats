@@ -23,7 +23,13 @@ var (
 	// 1000 requests per 10 minutes or 200 per 2 minutes. We make 95 per minute
 	// just to be safe.
 	limiter = rate.NewLimiter(rate.Every(time.Minute/95), 5)
+
+	httpClient = &http.Client{Timeout: 10 * time.Second}
 )
+
+// Upper bound for response bodies; the largest files we fetch (asset index,
+// language files) are well below this.
+const maxResponseSize = 32 << 20
 
 // Encodes data as minified or indented JSON and writes it to,
 // outFile creating intermediate directories as needed.
@@ -32,27 +38,20 @@ func SaveJSONFile(outFile string, data any) error {
 		return fmt.Errorf("create directory %q: %w", filepath.Dir(outFile), err)
 	}
 
-	out, err := os.OpenFile(outFile, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
-	if err != nil {
-		return fmt.Errorf("open file %q: %w", outFile, err)
-	}
-	defer out.Close()
-
-	var jsonData []byte
+	var (
+		jsonData []byte
+		err      error
+	)
 	if config.Get().Minify {
 		jsonData, err = json.Marshal(data)
-		if err != nil {
-			return fmt.Errorf("marshal JSON data for %q: %w", outFile, err)
-		}
 	} else {
 		jsonData, err = json.MarshalIndent(data, "", "  ")
-		if err != nil {
-			return fmt.Errorf("marshal indent JSON to %q: %w", outFile, err)
-		}
+	}
+	if err != nil {
+		return fmt.Errorf("marshal JSON data for %q: %w", outFile, err)
 	}
 
-	_, err = out.Write(jsonData)
-	if err != nil {
+	if err := os.WriteFile(outFile, jsonData, 0o600); err != nil {
 		return fmt.Errorf("write JSON data to %q: %w", outFile, err)
 	}
 
@@ -79,10 +78,6 @@ func ReadJSONFile(inFile string, out any) error {
 // even tho they exist.
 func FileExists(filePath string, notExistentIfEmpty bool) bool {
 	info, err := os.Stat(filePath)
-	if os.IsNotExist(err) {
-		return false
-	}
-
 	if err != nil {
 		return false
 	}
@@ -100,14 +95,12 @@ func NewHttpRequest(url string) ([]byte, error) {
 		return nil, err
 	}
 
-	client := http.Client{Timeout: 10 * time.Second}
-
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("build request for %q: %w", url, err)
 	}
 
-	res, err := client.Do(req)
+	res, err := httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("GET %q: %w", url, err)
 	}
@@ -117,10 +110,19 @@ func NewHttpRequest(url string) ([]byte, error) {
 		return nil, fmt.Errorf("GET %q returned status %d", url, res.StatusCode)
 	}
 
-	return io.ReadAll(res.Body)
+	body, err := io.ReadAll(io.LimitReader(res.Body, maxResponseSize+1))
+	if err != nil {
+		return nil, fmt.Errorf("read body of %q: %w", url, err)
+	}
+
+	if len(body) > maxResponseSize {
+		return nil, fmt.Errorf("GET %q: response exceeds %d bytes", url, maxResponseSize)
+	}
+
+	return body, nil
 }
 
-// Adds a random number of hours between 0 and `addHours` to tje current time.
+// Adds a random number of hours between 0 and `addHours` to the current time.
 func AddRandomTime(current time.Time, addHours int) time.Time {
 	if addHours == 0 {
 		return current
@@ -130,7 +132,7 @@ func AddRandomTime(current time.Time, addHours int) time.Time {
 }
 
 // https://stackoverflow.com/a/51997907
-// Compare 2 strings case-insenstive.
+// Compare 2 strings case-insensitive.
 func LessLower(sa, sb string) bool {
 	for {
 		rb, nb := utf8.DecodeRuneInString(sb)

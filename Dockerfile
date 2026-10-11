@@ -59,8 +59,8 @@ EOF
 RUN groupadd -f nonroot \
     && useradd -g nonroot nonroot \
     && mkdir -p /docker-entrypoint.d \
-    && chown -R nonroot:nonroot /usr/local/bin /docker-entrypoint.d \
-    && chmod -R +x /usr/local/bin
+    && chown nonroot:nonroot /docker-entrypoint.d \
+    && chmod 0755 /usr/local/bin/${APP_NAME} /usr/local/bin/entrypoint.sh
 
 USER nonroot
 

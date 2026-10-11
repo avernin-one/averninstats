@@ -25,12 +25,16 @@ func New() *Frontend {
 	if config.Get().Minify {
 		m = minify.New()
 
-		tmplMinifier := &html.Minifier{}
-		tmplMinifier.TemplateDelims = [2]string{"{{", "}}"}
+		// Keep attribute quotes, unquoted values break once a template
+		// variable inside them contains spaces.
+		tmplMinifier := &html.Minifier{
+			KeepQuotes:     true,
+			TemplateDelims: [2]string{"{{", "}}"},
+		}
 
 		m.Add("mustache", tmplMinifier)
 		m.AddFunc("css", css.Minify)
-		m.AddFunc("html", html.Minify)
+		m.Add("html", &html.Minifier{KeepQuotes: true})
 		m.AddFunc("js", js.Minify)
 	}
 
